@@ -1,0 +1,52 @@
+---
+import Base from '../layouts/Base.astro';
+import Home from '../views/Home.astro';
+import Menu from '../views/Menu.astro';
+import Filosofi from '../views/Filosofi.astro';
+import Order from '../views/Order.astro';
+import Kontak from '../views/Kontak.astro';
+import NotFound from '../views/NotFound.astro';
+import { getMenu, getSite, getTable } from '../data/api';
+import type { Menu as MenuData, Table } from '../data/types';
+import { LANGS, type Txt } from '../i18n';
+import { ui } from '../i18n/ui';
+import { ROUTES } from '../routes';
+
+export const prerender = false;
+
+const plain = (t: Txt, status: number) =>
+  new Response([t.id, t.en].filter(Boolean).join(' / '), { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+
+let site;
+try { site = await getSite(Astro.request, Astro.locals); } catch (e) { console.error('getSite gagal:', e); return plain(ui.unavailable, 503); }
+if (!site) return plain(ui.siteMissing, 404);
+if (!['trial', 'active'].includes(site.status)) return plain(ui.suspended, 503);
+
+// Bahasa utama tanpa awalan (/menu), bahasa kedua berawalan (/zh/menu).
+const parts = (Astro.params.path || '').split('/').filter(Boolean);
+const [primary, secondary] = site.languages;
+let lang = primary;
+if (secondary && parts[0] === secondary) { lang = secondary; parts.shift(); }
+else if (parts[0] === primary && (LANGS as readonly string[]).includes(parts[0])) return Astro.redirect('/' + parts.slice(1).join('/'));
+
+const slug = parts.join('/');
+const route = parts.length <= 1 ? ROUTES.find(r => r.slug === slug) : undefined;
+const views = { home: Home, menu: Menu, philosophy: Filosofi, order: Order, contact: Kontak };
+const View = route ? views[route.key] : NotFound;
+if (!route) Astro.response.status = 404;
+
+let menu: MenuData = { cats: [], dishes: [] };
+if (route && ['home', 'menu', 'order'].includes(route.key)) {
+  try { menu = await getMenu(Astro.locals, site); } catch (e) { console.error('getMenu gagal:', e); return plain(ui.unavailable, 503); }
+}
+
+const token = route?.key === 'order' ? Astro.url.searchParams.get('meja') || '' : '';
+let table: Table | null = null;
+if (token) { try { table = await getTable(Astro.locals, site, token); } catch (e) { console.error('getTable gagal:', e); } }
+
+// Halaman Order memuat data per meja: jangan di-cache bersama.
+Astro.response.headers.set('Cache-Control', route?.key === 'order' ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
+---
+<Base site={site} lang={lang} slug={route ? slug : ''} noindex={!route}>
+  <View lang={lang} site={site} menu={menu} table={table} token={token} />
+</Base>

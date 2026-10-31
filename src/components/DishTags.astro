@@ -1,0 +1,17 @@
+---
+import type { Dish } from '../data/types';
+import { loc, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+interface Props { dish: Dish; lang: string; primary: string }
+const { dish, lang, primary } = Astro.props;
+const badge = dish.badge ? loc(dish.badge, lang, primary) : '';
+const warn = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+---
+<div class="chips tight">
+  {badge && <span class="chip g">{badge}</span>}
+  {dish.egg && <span class="chip warn">{warn(ui.tags.egg)}</span>}
+  {dish.onion && <span class="chip warn">{warn(ui.tags.onion)}</span>}
+  {dish.nonHalal && <span class="chip warn">{warn(ui.tags.nonHalal)}</span>}
+  {dish.spicy > 0 && <span class="chip warn">{warn(ui.tags.spicy)} {'🌶'.repeat(dish.spicy)}</span>}
+  {dish.soldOut && <span class="chip">{warn(ui.tags.soldOut)}</span>}
+</div>

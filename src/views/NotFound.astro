@@ -1,0 +1,12 @@
+---
+import PageHead from '../components/PageHead.astro';
+import { href, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import type { ViewProps } from './types';
+const { lang, site } = Astro.props as ViewProps;
+---
+<PageHead title={pick(ui.notFound.title, lang)}>{pick(ui.notFound.body, lang)}</PageHead>
+<section class="after-head"><div class="wrap">
+  <a class="btn" href={href(site, lang)}>{pick(ui.notFound.home, lang)}</a>
+  <a class="btn ghost" href={href(site, lang, 'menu')}>{pick(ui.viewMenu, lang)}</a>
+</div></section>

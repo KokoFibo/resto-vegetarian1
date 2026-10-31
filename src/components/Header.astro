@@ -1,0 +1,25 @@
+---
+import type { Site } from '../data/types';
+import { href, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import { ROUTES } from '../routes';
+import LangSwitch from './LangSwitch.astro';
+interface Props { site: Site; lang: string; slug: string; brand: string; tagline: string | null }
+const { site, lang, slug, brand, tagline } = Astro.props;
+---
+<header id="site-header"><div class="wrap">
+  <a class="brand" href={href(site, lang)}>
+    <span class="logo" aria-hidden="true">{brand[0]}</span>
+    <span><b>{brand}</b>{tagline && <small>{tagline}</small>}</span>
+  </a>
+  <nav id="nav" aria-label={pick(ui.menuLabel, lang)}>
+    {ROUTES.map(r => (
+      <a href={href(site, lang, r.slug)} class={(r.slug === slug ? 'on' : '') + (r.key === 'order' ? ' ordn' : '')}
+         aria-current={r.slug === slug ? 'page' : undefined} data-meja={r.key === 'order' ? '' : undefined}>{pick(r.label, lang)}</a>
+    ))}
+  </nav>
+  <div class="tools">
+    <LangSwitch site={site} lang={lang} slug={slug} />
+    <button class="burger" id="burger" type="button" aria-label={pick(ui.menuLabel, lang)} aria-expanded="false" aria-controls="nav">☰</button>
+  </div>
+</div></header>

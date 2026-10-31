@@ -1,0 +1,58 @@
+---
+import { home as c } from '../content/aisin';
+import Utensils from '../components/Utensils.astro';
+import { href, loc, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import { idr } from '../lib/format';
+import type { ViewProps } from './types';
+const { lang, site, menu } = Astro.props as ViewProps;
+const primary = site.languages[0];
+const featured = menu.dishes.filter(d => d.img).slice(0, 3);
+const count = (slug: string) => menu.dishes.filter(d => d.cat === slug).length;
+const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+---
+<section class="hero"><div class="wrap">
+  <div>
+    <p class="rv jade eyebrow">{L(c.eyebrow)}</p>
+    <h1 class="rv" style="--d:.1s">{L(c.title)}<em>{L(c.titleEm)}</em></h1>
+    <p class="lead rv" style="--d:.2s">{L(c.lead)}</p>
+    <div class="chips rv" style="--d:.3s">{c.chips.map(k => <span class={'chip' + (k.gold ? ' g' : '')}>{L(k.text)}</span>)}</div>
+    <div class="actions rv" style="--d:.4s">
+      <a class="btn vm" href={href(site, lang, 'order')}>{L(ui.orderNow)}</a>
+      <a class="btn ghost" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a>
+    </div>
+  </div>
+  <div class="rv" style="--d:.2s">
+    <div class="frame">
+      <img src={c.hero.image} alt={L(c.hero.alt)} /><span class="stamp">{c.hero.stamp}</span>
+      <div class="cap"><div><p>{L(c.hero.kicker)}</p><h3>{L(c.hero.dish)}</h3></div><div class="pr">{idr(c.hero.price)}</div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="tight-b"><div class="ticker" aria-hidden="true"><div>{[0, 1].map(() => c.stats.map(s => <span>{s.value}<i>{L(s.label)}</i></span>))}</div></div></section>
+
+<section class="alt"><div class="wrap">
+  <h2 class="rv">{L(c.featured)}</h2><div class="rule"></div>
+  <div class="g3">{featured.map((d, i) => (
+    <a class="card rv" style={`--d:${i * 0.12}s`} href={href(site, lang, 'menu')}>
+      <div class="im"><img src={d.img} alt="" loading="lazy" /></div>
+      <div class="bd"><div class="row"><h3>{loc(d.name, lang, primary)}</h3><span class="price">{idr(d.price)}</span></div><p class="muted">{loc(d.short, lang, primary)}</p></div>
+    </a>))}</div>
+</div></section>
+
+<section><div class="wrap">
+  <h2 class="rv">{L(c.categories)}</h2><div class="rule"></div>
+  <div class="g3">{menu.cats.map((cat, i) => (
+    <a class="card rv" style={`--d:${i * 0.08}s`} href={href(site, lang, 'menu') + '#' + cat.slug}>
+      <div class="bd catcard">
+        <span class="icon jade"><Utensils size={26} /></span>
+        <div><h3>{loc(cat.name, lang, primary)}</h3><p class="muted">{count(cat.slug)} {L(ui.dishes)}</p></div>
+      </div>
+    </a>))}</div>
+</div></section>
+
+<section class="cta"><div class="wrap rv">
+  <h2>{L(c.cta.title)}</h2><p>{L(c.cta.body)}</p>
+  <a class="btn" href={href(site, lang, 'order')}>{L(c.cta.button)}</a>
+</div></section>

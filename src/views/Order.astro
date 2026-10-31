@@ -1,0 +1,67 @@
+---
+import PageHead from '../components/PageHead.astro';
+import DishTags from '../components/DishTags.astro';
+import Utensils from '../components/Utensils.astro';
+import { href, loc, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import { idr } from '../lib/format';
+import type { ViewProps } from './types';
+const { lang, site, menu, table, token } = Astro.props as ViewProps;
+const primary = site.languages[0];
+const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+const errors = Object.fromEntries(Object.entries(ui.errors).map(([code, t]) => [code, pick(t, lang)]));
+const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.cat === c.slug) })).filter(g => g.dishes.length);
+---
+<PageHead title={L(ui.order.title)}>
+  {table
+    ? <span>{L(ui.order.table)}: <b class="jade">{table.label}</b> · {L(ui.order.payAtCashier)}</span>
+    : L(ui.order.scanHint)}
+</PageHead>
+{!table ? (
+  <section class="after-head"><div class="wrap"><div class="panel scanbox rv">
+    <span class="jade"><Utensils size={44} /></span>
+    <h3>{L(ui.order.scanTitle)}</h3><p>{L(ui.order.scanBody)}</p>
+    <p><a class="btn" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a></p>
+  </div></div></section>
+) : (
+  <section class="after-head"><div class="wrap">
+    <div id="orderDone" class="panel scanbox" hidden>
+      <span class="jade">✔</span><h3 id="doneTitle"></h3>
+      <p>{L(ui.order.number)}</p><p class="price huge" id="doneNo"></p><p id="doneInfo"></p>
+      <p>{L(ui.order.waitAtTable)}</p>
+      <p><button type="button" class="btn ghost" id="again">{L(ui.order.again)}</button></p>
+    </div>
+    <form id="orderForm" class="ordergrid" data-token={token} data-lang={lang}
+          data-errs={JSON.stringify(errors)} data-empty={L(ui.order.nothing)} data-ok={L(ui.order.received)}>
+      <div>
+        {groups.map(g => (
+          <div class="rv ogroup">
+            <h3>{loc(g.cat.name, lang, primary)}</h3>
+            {g.dishes.map(d => (
+              <div class={'oi' + (d.soldOut ? ' off' : '')} data-id={d.id} data-price={d.price} data-name={loc(d.name, lang, primary)}>
+                <div>
+                  <h4>{loc(d.name, lang, primary)}</h4><span class="price">{idr(d.price)}</span>
+                  <div class="tags"><DishTags dish={d} lang={lang} primary={primary} /></div>
+                </div>
+                <div class="qty">
+                  <button type="button" data-d="-" aria-label="−" disabled={d.soldOut}>−</button>
+                  <output>0</output>
+                  <button type="button" data-d="+" aria-label="+" disabled={d.soldOut}>+</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <aside class="panel sum rv" style="--d:.15s">
+        <h3>{L(ui.order.yourOrder)} · {table.label}</h3>
+        <ul id="lines"></ul>
+        <div class="row"><b>{L(ui.order.total)}</b><b id="total" class="price">IDR 0k</b></div>
+        <label>{L(ui.order.name)}<input name="name" maxlength="60" autocomplete="name" /></label>
+        <label>{L(ui.order.note)}<input name="note" maxlength="200" /></label>
+        <p id="orderErr" class="err" role="alert"></p>
+        <button class="btn vm" type="submit" id="orderBtn">{L(ui.order.send)}</button>
+      </aside>
+    </form>
+  </div></section>
+)}

@@ -1,0 +1,41 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import type { Site } from '../data/types';
+import { HTML_LANG, href, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import { brandOf } from '../lib/brand';
+interface Props { site: Site; lang: string; slug: string; noindex?: boolean }
+const { site, lang, slug, noindex = false } = Astro.props;
+const { brand, tagline } = brandOf(site, lang);
+const title = brand + (tagline ? ' — ' + tagline : '');
+const origin = Astro.url.origin;
+---
+<!doctype html>
+<html lang={HTML_LANG[lang] ?? lang}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={tagline || brand} />
+  {noindex && <meta name="robots" content="noindex" />}
+  {site.languages.length > 1 && site.languages.map(l => <link rel="alternate" hreflang={HTML_LANG[l] ?? l} href={origin + href(site, l, slug)} />)}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;1,400&family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script is:inline>document.documentElement.classList.add('js')</script>
+  <ClientRouter />
+</head>
+<body>
+  <a class="skip" href="#main">{pick(ui.skip, lang)}</a>
+  <Header site={site} lang={lang} slug={slug} brand={brand} tagline={tagline} />
+  <main id="main"><slot /></main>
+  <Footer site={site} lang={lang} brand={brand} tagline={tagline} />
+  <script>
+    import '../scripts/ui';
+    import '../scripts/order';
+  </script>
+</body>
+</html>

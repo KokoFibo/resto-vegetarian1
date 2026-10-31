@@ -1,0 +1,24 @@
+---
+import type { Site } from '../data/types';
+import { pick } from '../i18n';
+import { ui } from '../i18n/ui';
+interface Props { site: Site; lang: string; brand: string; tagline: string | null }
+const { site, lang, brand, tagline } = Astro.props;
+const hours = (['lunch', 'tea', 'dinner'] as const)
+  .filter(k => site.opening_hours?.[k])
+  .map(k => ({ label: pick(ui.hours[k], lang), time: site.opening_hours![k].replace('-', ' – ') }));
+---
+<footer><div class="wrap">
+  <div class="cols">
+    <div><h4>{brand}</h4>{tagline && <p>{tagline}</p>}</div>
+    {hours.length > 0 && (
+      <div><h4>{pick(ui.hours.title, lang)}</h4><ul>{hours.map(h => <li class="row"><span>{h.label}</span><span>{h.time}</span></li>)}</ul></div>
+    )}
+    <div>
+      <h4>{pick(ui.footer.contact, lang)}</h4>
+      {site.address && <p>{site.address}</p>}
+      {site.phone && <p>{pick(ui.footer.tel, lang)}: {site.phone}</p>}
+    </div>
+  </div>
+  <p class="cp">© {new Date().getFullYear()} {brand}</p>
+</div></footer>

@@ -1,0 +1,13 @@
+---
+import type { Site } from '../data/types';
+import { LANG_LABEL, href } from '../i18n';
+interface Props { site: Site; lang: string; slug: string }
+const { site, lang, slug } = Astro.props;
+---
+{site.languages.length > 1 && (
+  <div class="lang" role="group" aria-label="Language">
+    {site.languages.map(l => (
+      <a href={href(site, l, slug)} hreflang={l} lang={l} class={lang === l ? 'on' : ''} aria-current={lang === l ? 'true' : undefined} data-meja={slug === 'order' ? '' : undefined}>{LANG_LABEL[l] ?? l.toUpperCase()}</a>
+    ))}
+  </div>
+)}

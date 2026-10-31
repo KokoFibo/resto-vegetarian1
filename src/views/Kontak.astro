@@ -1,0 +1,28 @@
+---
+import { contact as c } from '../content/aisin';
+import PageHead from '../components/PageHead.astro';
+import { href, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import { brandOf } from '../lib/brand';
+import { mapLinks } from '../lib/maps';
+import type { ViewProps } from './types';
+const { lang, site } = Astro.props as ViewProps;
+const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+const { brand } = brandOf(site, lang);
+const hours = (['lunch', 'tea', 'dinner'] as const)
+  .filter(k => site.opening_hours?.[k])
+  .map(k => ({ label: pick(ui.hours[k], lang), time: site.opening_hours![k].replace('-', ' – ') }));
+const links = mapLinks(site.maps_url, site.address, brand);
+---
+<PageHead title={L(c.title)}>{L(c.lead)}</PageHead>
+<section class="after-head"><div class="wrap"><div class="g2">
+  <div class="card rv"><div class="bd roomy">
+    {site.address && <div><h3>{L(c.address)}</h3><p>{site.address}</p></div>}
+    {hours.length > 0 && <div><h3>{L(c.hours)}</h3><p>{hours.map(h => <span>{h.label} {h.time}<br /></span>)}</p></div>}
+    {site.phone && <div><h3>{L(c.phone)}</h3><p class="price big">{site.phone}</p></div>}
+    <a class="btn vm self-start" href={href(site, lang, 'order')}>{L(ui.orderNow)}</a>
+  </div></div>
+  <a class="card rv mapcard" style="--d:.15s" href={links.dir} data-astro-reload target="_blank" rel="noopener">
+    <div class="bd"><h3>{L(c.directions)}</h3><p>{L(c.directionsHint)}</p></div>
+  </a>
+</div></div></section>
