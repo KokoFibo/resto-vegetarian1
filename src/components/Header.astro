@@ -2,7 +2,7 @@
 import type { Site } from '../data/types';
 import { href, pick } from '../i18n';
 import { ui } from '../i18n/ui';
-import { ROUTES } from '../routes';
+import { routesFor } from '../routes';
 import LangSwitch from './LangSwitch.astro';
 interface Props { site: Site; lang: string; slug: string; brand: string; tagline: string | null }
 const { site, lang, slug, brand, tagline } = Astro.props;
@@ -13,7 +13,7 @@ const { site, lang, slug, brand, tagline } = Astro.props;
     <span><b>{brand}</b>{tagline && <small>{tagline}</small>}</span>
   </a>
   <nav id="nav" aria-label={pick(ui.menuLabel, lang)}>
-    {ROUTES.map(r => (
+    {routesFor(site).map(r => (
       <a href={href(site, lang, r.slug)} class={(r.slug === slug ? 'on' : '') + (r.key === 'order' ? ' ordn' : '')}
          aria-current={r.slug === slug ? 'page' : undefined} data-meja={r.key === 'order' ? '' : undefined}>{pick(r.label, lang)}</a>
     ))}

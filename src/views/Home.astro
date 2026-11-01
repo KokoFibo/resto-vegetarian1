@@ -1,45 +1,73 @@
 ---
-import { home as c } from '../content/aisin';
 import Utensils from '../components/Utensils.astro';
+import { contentFor } from '../content';
+import type { HeroKey } from '../data/types';
 import { href, loc, pick } from '../i18n';
 import { ui } from '../i18n/ui';
+import { brandOf } from '../lib/brand';
 import { idr } from '../lib/format';
+import { mediaUrl } from '../lib/media';
 import type { ViewProps } from './types';
 const { lang, site, menu } = Astro.props as ViewProps;
+const { home: c } = contentFor(site);
 const primary = site.languages[0];
-const featured = menu.dishes.filter(d => d.img).slice(0, 3);
-const count = (slug: string) => menu.dishes.filter(d => d.cat === slug).length;
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+
+// Teks hero dari admin: kustom[bahasa] → kustom[bahasa utama] → teks bawaan template (kolom kosong = bawaan).
+const own = (k: HeroKey) => { const m = site.hero.texts[k]; return (m && (m[lang] || m[primary])) || ''; };
+const customTitle = own('title');
+const title = customTitle || L(c.title);
+// Judul & kalimat tekan dipasangkan: bila judul kustom ada, jangan campur dengan kalimat tekan bawaan.
+const titleEm = customTitle ? own('title_em') : own('title_em') || (c.titleEm ? L(c.titleEm) : '');
+const chips = [0, 1, 2].map(i => ({ text: own(('chip' + (i + 1)) as HeroKey) || (c.chips[i] ? L(c.chips[i].text) : ''), gold: c.chips[i]?.gold ?? i === 2 })).filter(k => k.text);
+
+// Foto hero: kustom dari admin, kalau tidak foto bawaan. Stempel & keterangan kartu milik foto bawaan, jadi hanya tampil bersamanya.
+const customImg = site.hero.image;
+const heroImg = customImg || (c.hero.image ? mediaUrl(Astro.locals, c.hero.image) : '');
+const { brand } = brandOf(site, lang);
+
+// Hidangan pilihan: yang ditandai ★ di admin (maks 6, urutan menu); bila tak ada, tiga hidangan pertama yang berfoto.
+const withImg = menu.dishes.filter(d => d.img);
+const starred = withImg.filter(d => d.featured).slice(0, 6);
+const featured = starred.length ? starred : withImg.slice(0, 3);
+const count = (slug: string) => menu.dishes.filter(d => d.cat === slug).length;
 ---
-<section class="hero"><div class="wrap">
+<section class={'hero' + (heroImg ? '' : ' solo')}><div class="wrap">
   <div>
-    <p class="rv jade eyebrow">{L(c.eyebrow)}</p>
-    <h1 class="rv" style="--d:.1s">{L(c.title)}<em>{L(c.titleEm)}</em></h1>
-    <p class="lead rv" style="--d:.2s">{L(c.lead)}</p>
-    <div class="chips rv" style="--d:.3s">{c.chips.map(k => <span class={'chip' + (k.gold ? ' g' : '')}>{L(k.text)}</span>)}</div>
+    <p class="rv jade eyebrow">{own('eyebrow') || L(c.eyebrow)}</p>
+    <h1 class="rv" style="--d:.1s">{title}{titleEm && <em>{titleEm}</em>}</h1>
+    <p class="lead rv" style="--d:.2s">{own('lead') || L(c.lead)}</p>
+    {chips.length > 0 && <div class="chips rv" style="--d:.3s">{chips.map(k => <span class={'chip' + (k.gold ? ' g' : '')}>{k.text}</span>)}</div>}
     <div class="actions rv" style="--d:.4s">
-      <a class="btn vm" href={href(site, lang, 'order')}>{L(ui.orderNow)}</a>
-      <a class="btn ghost" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a>
+      <a class="btn vm" href={href(site, lang, 'order')}>{own('cta_order') || L(ui.orderNow)}</a>
+      <a class="btn ghost" href={href(site, lang, 'menu')}>{own('cta_menu') || L(ui.viewMenu)}</a>
     </div>
   </div>
-  <div class="rv" style="--d:.2s">
-    <div class="frame">
-      <img src={c.hero.image} alt={L(c.hero.alt)} /><span class="stamp">{c.hero.stamp}</span>
-      <div class="cap"><div><p>{L(c.hero.kicker)}</p><h3>{L(c.hero.dish)}</h3></div><div class="pr">{idr(c.hero.price)}</div></div>
+  {heroImg && (
+    <div class="rv" style="--d:.2s">
+      <div class={'frame' + (customImg ? ' tall' : '')}>
+        <img src={heroImg} alt={customImg ? brand : L(c.hero.alt)} fetchpriority="high" decoding="async" />
+        {!customImg && c.hero.stamp && <span class="stamp">{c.hero.stamp}</span>}
+        {!customImg && c.hero.kicker && c.hero.dish && c.hero.price != null && (
+          <div class="cap"><div><p>{L(c.hero.kicker)}</p><h3>{L(c.hero.dish)}</h3></div><div class="pr">{idr(c.hero.price)}</div></div>
+        )}
+      </div>
     </div>
-  </div>
+  )}
 </div></section>
 
-<section class="tight-b"><div class="ticker" aria-hidden="true"><div>{[0, 1].map(() => c.stats.map(s => <span>{s.value}<i>{L(s.label)}</i></span>))}</div></div></section>
+{c.stats.length > 0 && <section class="tight-b"><div class="ticker" aria-hidden="true"><div>{[0, 1].map(() => c.stats.map(s => <span>{s.value}<i>{L(s.label)}</i></span>))}</div></div></section>}
 
-<section class="alt"><div class="wrap">
-  <h2 class="rv">{L(c.featured)}</h2><div class="rule"></div>
-  <div class="g3">{featured.map((d, i) => (
-    <a class="card rv" style={`--d:${i * 0.12}s`} href={href(site, lang, 'menu')}>
-      <div class="im"><img src={d.img} alt="" loading="lazy" /></div>
-      <div class="bd"><div class="row"><h3>{loc(d.name, lang, primary)}</h3><span class="price">{idr(d.price)}</span></div><p class="muted">{loc(d.short, lang, primary)}</p></div>
-    </a>))}</div>
-</div></section>
+{featured.length > 0 && (
+  <section class="alt"><div class="wrap">
+    <h2 class="rv">{L(c.featured)}</h2><div class="rule"></div>
+    <div class="g3">{featured.map((d, i) => (
+      <a class="card rv" style={`--d:${(i % 3) * 0.12}s`} href={href(site, lang, 'menu')}>
+        <div class="im"><img src={d.img} alt="" loading="lazy" /></div>
+        <div class="bd"><div class="row"><h3>{loc(d.name, lang, primary)}</h3><span class="price">{idr(d.price)}</span></div><p class="muted">{loc(d.short, lang, primary)}</p></div>
+      </a>))}</div>
+  </div></section>
+)}
 
 <section><div class="wrap">
   <h2 class="rv">{L(c.categories)}</h2><div class="rule"></div>

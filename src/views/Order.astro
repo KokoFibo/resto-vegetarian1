@@ -10,14 +10,21 @@ const { lang, site, menu, table, token } = Astro.props as ViewProps;
 const primary = site.languages[0];
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 const errors = Object.fromEntries(Object.entries(ui.errors).map(([code, t]) => [code, pick(t, lang)]));
+const closed = site.orders_open === false;
 const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.cat === c.slug) })).filter(g => g.dishes.length);
 ---
 <PageHead title={L(ui.order.title)}>
-  {table
+  {closed ? L(ui.order.closedBody) : table
     ? <span>{L(ui.order.table)}: <b class="jade">{table.label}</b> · {L(ui.order.payAtCashier)}</span>
     : L(ui.order.scanHint)}
 </PageHead>
-{!table ? (
+{closed ? (
+  <section class="after-head"><div class="wrap"><div class="panel scanbox rv" role="status">
+    <span class="jade"><Utensils size={44} /></span>
+    <h3>{L(ui.order.closedTitle)}</h3>
+    <p><a class="btn" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a></p>
+  </div></div></section>
+) : !table ? (
   <section class="after-head"><div class="wrap"><div class="panel scanbox rv">
     <span class="jade"><Utensils size={44} /></span>
     <h3>{L(ui.order.scanTitle)}</h3><p>{L(ui.order.scanBody)}</p>

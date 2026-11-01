@@ -12,6 +12,15 @@ export const ui = {
     contact: t('Kontak', 'Contact', '访客指南'),
   },
   orderNow: t('Pesan sekarang', 'Order now', '立即点餐'),
+  close: t('Tutup', 'Close', '关闭'),
+  moreInfo: t('Selengkapnya', 'Learn more', '了解更多'),
+  /** Teks netral untuk restoran tanpa set konten khusus (content/index.ts). */
+  generic: {
+    lead: t('Selamat datang. Lihat menu kami atau pesan langsung dari meja Anda.', 'Welcome. Browse our menu or order right from your table.', '欢迎光临。请查看菜单，或在座位上直接点餐。'),
+    chipVegan: t('100% vegan', '100% vegan', '100% 纯素'),
+    chipVegetarian: t('100% vegetarian', '100% vegetarian', '100% 素食'),
+    directions: t('Buka petunjuk arah', 'Get directions', '一键导航'),
+  },
   viewMenu: t('Lihat menu', 'View menu', '阅览菜单'),
   dishes: t('hidangan', 'dishes', '道'),
   menuLabel: t('Menu', 'Menu', '菜单'),
@@ -55,6 +64,8 @@ export const ui = {
     number: t('Nomor pesanan', 'Order number', '订单号'),
     waitAtTable: t('Silakan menunggu di meja Anda. Pembayaran dilakukan di kasir.', 'Please wait at your table. Payment is made at the cashier.', '请在座位等候，付款请至收银台。'),
     again: t('Pesan lagi', 'Order again', '再点一单'),
+    closedTitle: t('Pemesanan sedang ditutup', 'Ordering is temporarily closed', '暂时停止点餐'),
+    closedBody: t('Mohon maaf, pemesanan lewat QR code sedang tidak dibuka. Silakan hubungi staf kami atau coba lagi nanti.', 'Sorry, ordering through the QR code is not open right now. Please ask our staff or try again later.', '很抱歉，扫码点餐暂未开放。请联系服务员或稍后再试。'),
   },
   /** Pesan galat dari backend, berdasarkan kode. */
   errors: {
@@ -63,6 +74,7 @@ export const ui = {
     'E:too_many_active': t('Terlalu banyak pesanan yang sedang diproses di meja ini. Silakan hubungi staf.', 'Too many orders are in progress at this table. Please ask our staff.', '本桌进行中的订单过多，请联系服务员。'),
     'E:item_unavailable': t('Ada hidangan yang tidak tersedia lagi. Muat ulang halaman lalu pilih kembali.', 'Some dishes are no longer available. Reload the page and choose again.', '部分菜品已无法供应，请刷新页面后重新选择。'),
     'E:empty': t('Pilih minimal satu hidangan.', 'Please choose at least one dish.', '请至少选择一道菜。'),
+    'E:closed': t('Pemesanan sedang ditutup. Silakan hubungi staf kami.', 'Ordering is temporarily closed. Please ask our staff.', '暂时停止点餐，请联系服务员。'),
     'E:unavailable': t('Pemesanan belum tersedia saat ini.', 'Ordering is not available right now.', '暂时无法下单。'),
   },
   notFound: {

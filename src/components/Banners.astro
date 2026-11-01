@@ -1,0 +1,34 @@
+---
+import type { Banner, Site } from '../data/types';
+import { loc, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+
+/** Banner yang boleh tampil di halaman ini (scope all = semua halaman; home/order = hanya halaman itu). */
+export const visibleBanners = (site: Site, routeKey?: string): Banner[] =>
+  site.banners.filter(b => b.scope === 'all' || (b.scope === 'home' && routeKey === 'home') || (b.scope === 'order' && routeKey === 'order'));
+
+interface Props { site: Site; lang: string; banners: Banner[] }
+const { site, lang, banners } = Astro.props;
+const primary = site.languages[0];
+---
+{banners.length > 0 && (
+  <div class="bns" data-banners>
+    {banners.map(b => (
+      <div class={'bn ' + b.kind} role="status" data-bn={`${b.id}:${b.rev}`}>
+        <span>{loc(b.text, lang, primary)}</span>
+        {b.link_url && <a href={b.link_url}>{loc(b.link_label, lang, primary) || pick(ui.moreInfo, lang)}</a>}
+        <button type="button" class="bn-x" aria-label={pick(ui.close, lang)}>×</button>
+      </div>
+    ))}
+  </div>
+  <script is:inline data-astro-rerun>
+    /* Sembunyikan banner yang sudah ditutup SEBELUM digambar (tanpa kedip). Kunci: bn:<id>:<rev>. */
+    (function () {
+      try {
+        var all = document.querySelectorAll('[data-bn]'), left = 0;
+        all.forEach(function (el) { if (localStorage.getItem('bn:' + el.getAttribute('data-bn'))) el.hidden = true; else left++; });
+        if (!left) document.body.classList.remove('has-bn');
+      } catch (e) {}
+    })();
+  </script>
+)}

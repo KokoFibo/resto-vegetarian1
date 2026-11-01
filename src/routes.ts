@@ -1,3 +1,5 @@
+import { contentFor } from './content';
+import type { Site } from './data/types';
 import { ui } from './i18n/ui';
 
 /** Halaman publik. Alamat di luar daftar ini (termasuk apa pun yang bukan halaman pengunjung) menghasilkan 404. */
@@ -10,3 +12,6 @@ export const ROUTES = [
 ] as const;
 
 export type RouteKey = (typeof ROUTES)[number]['key'];
+
+/** Halaman yang ada untuk restoran ini: Filosofi hanya bila restoran punya kontennya (lihat content/index.ts). */
+export const routesFor = (site: Site) => ROUTES.filter(r => r.key !== 'philosophy' || contentFor(site).philosophy);

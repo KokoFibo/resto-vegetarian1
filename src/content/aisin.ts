@@ -2,7 +2,8 @@ import type { Txt } from '../i18n';
 
 /**
  * Teks halaman Beranda, Filosofi, dan Kontak untuk Aisin.
- * Dipisah dari tampilan supaya nanti mudah diganti per restoran (dari backend atau berkas lain).
+ * Dipisah dari tampilan supaya nanti mudah diganti per restoran (lihat content/index.ts).
+ * `image` = kunci R2 gambar bawaan (restaurant/defaults/aisin/…); alamat akhirnya dibuat lib/media.ts.
  */
 const t = (id: string, en: string, zh: string): Txt => ({ id, en, zh });
 
@@ -20,7 +21,7 @@ export const home = {
     { text: t('Pu-erh pohon tua', 'Old-tree pu-erh', '古树普洱 · 禅茶佐宴'), gold: true },
   ],
   hero: {
-    image: '/images/jamur-gunung.webp',
+    image: 'restaurant/defaults/aisin/jamur-gunung.webp',
     alt: t('Kuali jamur gunung', 'Mountain mushroom pot', '山珍菌菇煲'),
     stamp: '禅素合一',
     kicker: t('Hidangan andalan', 'Signature dish', '招牌菜'),
@@ -57,14 +58,14 @@ export const philosophy = {
       body: t('Perjamuan teh para sastrawan Dinasti Song bertemu resep vegetarian istana: kaldu direbus pelan, dikukus dalam bambu, tanpa minyak berat.', 'The tea banquets of Song-dynasty scholars meet imperial vegetarian recipes: slow-simmered broth, bamboo-steamed, never heavy with oil.', '融合宋代文人茶席宴与宫廷素馔秘法，摒弃厚重油脂，辅以山泉缓煨、慢火萃汤、竹屉微蒸。') },
   ],
   chef: {
-    image: '/images/koki-gu.webp',
+    image: 'restaurant/defaults/aisin/koki-gu.webp',
     alt: t('Koki Gu', 'Chef Gu', '主厨顾师傅'),
     title: t('Koki Gu, 25 tahun dalam diam', 'Chef Gu, 25 quiet years', '主厨顾师傅 · 二十五载匠造'),
     body: t('Dari memilih jamur hingga menyeduh kaldu enam jam, setiap langkah dikerjakan tanpa tergesa. Teh bukan pendamping, melainkan bagian dari masakan.', 'From choosing mushrooms to six hours of simmering broth, every step is done unhurried. Tea is not a side note, but part of the cooking.', '从择菇到煨煮六小时的高汤，每一步都不疾不徐。茶不是配角，而是菜的一部分。'),
     button: t('Cicipi hasilnya', 'Taste the result', '品尝雅叙'),
   },
   promise: {
-    image: '/images/sup-labu-emas-matsutake.webp',
+    image: 'restaurant/defaults/aisin/sup-labu-emas-matsutake.webp',
     alt: t('Sup labu emas matsutake', 'Golden pumpkin matsutake soup', '金汤松茸猴头菇'),
     title: t('Janji kemurnian', 'Our purity promise', '纯净承诺'),
     body: t('Tanpa MSG, tanpa pewarna, tanpa lemak hewani. Hidangan yang mengandung telur atau bawang ditandai dengan jelas di menu.', 'No MSG, no colourings, no animal fat. Dishes containing egg or onion are clearly marked on the menu.', '零味精、零人工色素、零动物油脂。含蛋或含葱蒜的菜品均在菜单中清楚标注。'),

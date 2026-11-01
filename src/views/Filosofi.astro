@@ -1,9 +1,11 @@
 ---
-import { philosophy as c } from '../content/aisin';
+import { contentFor } from '../content';
 import PageHead from '../components/PageHead.astro';
 import { href, pick } from '../i18n';
+import { mediaUrl } from '../lib/media';
 import type { ViewProps } from './types';
 const { lang, site } = Astro.props as ViewProps;
+const c = contentFor(site).philosophy!;   // rute ini hanya ada bila restoran punya konten Filosofi (routesFor)
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 ---
 <PageHead title={L(c.title)}>{L(c.lead)}</PageHead>
@@ -14,14 +16,14 @@ const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 </div></div></section>
 <section class="alt"><div class="wrap">
   <div class="split rev">
-    <div class="im rv"><img src={c.chef.image} alt={L(c.chef.alt)} loading="lazy" /></div>
+    <div class="im rv"><img src={mediaUrl(Astro.locals, c.chef.image)} alt={L(c.chef.alt)} loading="lazy" /></div>
     <div class="rv" style="--d:.15s">
       <h2>{L(c.chef.title)}</h2><div class="rule"></div><p>{L(c.chef.body)}</p>
       <p class="more"><a class="btn" href={href(site, lang, 'menu')}>{L(c.chef.button)}</a></p>
     </div>
   </div>
   <div class="split">
-    <div class="im rv"><img src={c.promise.image} alt={L(c.promise.alt)} loading="lazy" /></div>
+    <div class="im rv"><img src={mediaUrl(Astro.locals, c.promise.image)} alt={L(c.promise.alt)} loading="lazy" /></div>
     <div class="rv" style="--d:.15s"><h2>{L(c.promise.title)}</h2><div class="rule"></div><p>{L(c.promise.body)}</p></div>
   </div>
 </div></section>

@@ -10,7 +10,7 @@ import { getMenu, getSite, getTable } from '../data/api';
 import type { Menu as MenuData, Table } from '../data/types';
 import { LANGS, type Txt } from '../i18n';
 import { ui } from '../i18n/ui';
-import { ROUTES } from '../routes';
+import { routesFor } from '../routes';
 
 export const prerender = false;
 
@@ -30,7 +30,7 @@ if (secondary && parts[0] === secondary) { lang = secondary; parts.shift(); }
 else if (parts[0] === primary && (LANGS as readonly string[]).includes(parts[0])) return Astro.redirect('/' + parts.slice(1).join('/'));
 
 const slug = parts.join('/');
-const route = parts.length <= 1 ? ROUTES.find(r => r.slug === slug) : undefined;
+const route = parts.length <= 1 ? routesFor(site).find(r => r.slug === slug) : undefined;
 const views = { home: Home, menu: Menu, philosophy: Filosofi, order: Order, contact: Kontak };
 const View = route ? views[route.key] : NotFound;
 if (!route) Astro.response.status = 404;
@@ -47,6 +47,6 @@ if (token) { try { table = await getTable(Astro.locals, site, token); } catch (e
 // Halaman Order memuat data per meja: jangan di-cache bersama.
 Astro.response.headers.set('Cache-Control', route?.key === 'order' ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
 ---
-<Base site={site} lang={lang} slug={route ? slug : ''} noindex={!route}>
+<Base site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
   <View lang={lang} site={site} menu={menu} table={table} token={token} />
 </Base>

@@ -50,3 +50,6 @@ Desktop.ini
 
 # Package manager
 .pnpm-store/
+
+# Build uji e2e (npm run test:e2e)
+.test-dist/

@@ -1,5 +1,5 @@
 ---
-import { contact as c } from '../content/aisin';
+import { contentFor } from '../content';
 import PageHead from '../components/PageHead.astro';
 import { href, pick } from '../i18n';
 import { ui } from '../i18n/ui';
@@ -7,6 +7,7 @@ import { brandOf } from '../lib/brand';
 import { mapLinks } from '../lib/maps';
 import type { ViewProps } from './types';
 const { lang, site } = Astro.props as ViewProps;
+const c = contentFor(site).contact;
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 const { brand } = brandOf(site, lang);
 const hours = (['lunch', 'tea', 'dinner'] as const)

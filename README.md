@@ -11,6 +11,8 @@ npm install
 npm run dev        # http://localhost:4321
 npm run build
 npm run check      # pemeriksaan tipe
+npm run mock-api   # API tiruan lokal (port 4600) untuk mencoba mode API tanpa backend
+npm run test:e2e   # uji ujung-ke-ujung: membangun dengan adapter Node lalu memeriksa HTML pada banyak skenario
 ```
 
 Tanpa `API_URL`, frontend berjalan dalam **mode contoh**: menampilkan restoran dan menu bawaan Aisin (`src/data/demo.ts`), dan pemesanan dinonaktifkan. Dengan `API_URL`, restoran ditentukan dari domain yang dibuka.
@@ -19,6 +21,8 @@ Tanpa `API_URL`, frontend berjalan dalam **mode contoh**: menampilkan restoran d
 |---|---|
 | `API_URL` | Alamat backend, mis. `https://api.contoh.com`. Kosong = mode contoh. |
 | `DEFAULT_SITE_SLUG` | Hanya untuk pengembangan/pratinjau (localhost, `*.pages.dev`). Jangan diisi di produksi. |
+| `MEDIA_URL` | Alamat publik bucket gambar R2 (mis. `https://images.kokofibo.com`) untuk gambar **bawaan** template. Kosong = cadangan lokal `/images/<berkas>`. |
+| `DEMO_SCENARIO` | Hanya mode contoh: `closed`, `banners`, `featured`, `hero-custom`, `theme-<id>`, `theme-custom`, `theme-dark` (boleh beberapa, dipisah koma) untuk melihat keadaan dari admin. |
 
 Deploy: Cloudflare Pages, build command `npm run build`, output `dist`. Bila muncul error `Invalid binding SESSION`, tambahkan KV binding `SESSION`.
 
@@ -26,15 +30,17 @@ Deploy: Cloudflare Pages, build command `npm run build`, output `dist`. Bila mun
 
 ```
 src/
-  data/        types.ts (bentuk data dari backend) · api.ts (satu-satunya pemanggil backend) · demo.ts
+  data/        types.ts (bentuk data dari backend) · api.ts (satu-satunya pemanggil backend, normalisasi defensif) · demo.ts (data & skenario contoh)
   i18n/        index.ts (bahasa, href, pemilih teks) · ui.ts (teks antarmuka: navigasi, label, galat)
-  content/     aisin.ts — teks Beranda, Filosofi, Kontak (terpisah dari tampilan)
-  layouts/     Base.astro
-  components/  Header, Footer, LangSwitch, DishCard, DishTags, PageHead, Utensils
+  content/     index.ts (contentFor: set konten per restoran) · aisin.ts (teks Aisin: Beranda, Filosofi, Kontak)
+  lib/         theme.ts (tema → variabel CSS, validasi) · media.ts (alamat gambar bawaan: R2 / cadangan lokal) · brand, env, format, maps
+  layouts/     Base.astro (tema, banner)
+  components/  Header, Footer, LangSwitch, DishCard, DishTags, PageHead, Banners, Utensils
   views/       Home, Menu, Filosofi, Order, Kontak, NotFound
   pages/       [...path].astro (pengarah rute) · api/orders.ts (penerus tipis ke backend)
   scripts/     ui.ts (reveal, menu HP, token meja) · order.ts (formulir pesanan)
   styles/      base.css · components.css · pages.css
+tools/         mock-api.mjs (API tiruan) · e2e.mjs (uji ujung-ke-ujung)
 ```
 
 Alamat halaman: bahasa utama tanpa awalan (`/menu`), bahasa kedua berawalan (`/zh/menu`). Alamat lain menghasilkan 404.
@@ -51,7 +57,16 @@ Alamat halaman: bahasa utama tanpa awalan (`/menu`), bahasa kedua berawalan (`/z
 
 Tidak ada tautan ke halaman pengelolaan di frontend ini. Pengelolaan menu dan pesanan ada di backend yang terpisah.
 
+## Yang dikelola dari admin (tampil lewat API)
+
+Warna (skema/kustom, termasuk mode gelap), hero Beranda (teks + foto), banner info/promo/libur, tombol "Tutup sementara" (halaman Order ditutup, galat `E:closed`), dan hidangan unggulan ★. Rincian field dan pemetaannya ada di [`API-CONTRACT.md`](./API-CONTRACT.md); riwayat perubahan kontrak di [`CHANGELOG-KONTRAK.md`](./CHANGELOG-KONTRAK.md). Restoran yang belum mengatur apa pun tampil persis seperti bawaan.
+
+## Gambar bawaan di Cloudflare R2
+
+Gambar bawaan template ada di R2 pada `restaurant/defaults/aisin/<berkas>.webp` dan dialamatkan lewat `MEDIA_URL` (`lib/media.ts`). Folder `public/images` **tetap dipertahankan** sebagai cadangan (dipakai bila `MEDIA_URL` kosong). Pengunggahan dilakukan skrip `scripts/upload-images.mjs` di proyek backend (tidak menghapus apa pun; `--dry` untuk rencana). Foto menu dan foto hero kustom datang dari API sebagai URL penuh.
+
 ## Catatan
 
-- Teks Beranda/Filosofi/Kontak masih bawaan Aisin (`src/content/aisin.ts`). Untuk restoran lain, ganti berkas itu atau sambungkan ke data dari backend.
-- Foto hidangan datang dari backend sebagai URL lengkap. Foto merek (koki, hero) ada di `public/images`.
+- Set konten **Aisin** (teks Mandarin, pita statistik, halaman Filosofi) hanya dipakai bila `slug = aisin`. Restoran lain memakai set generik (`content/index.ts`): brand/slogan dari backend, tanpa statistik, tanpa Filosofi. Teks hero tetap bisa diganti owner untuk semua restoran.
+- Pengisian Filosofi/statistik/galeri dari admin direncanakan pada tahap berikutnya.
+- Halaman non-Order di-cache 60 detik di tepi Cloudflare, jadi perubahan dari admin muncul dalam ±1 menit.

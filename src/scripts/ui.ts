@@ -44,8 +44,19 @@ function setupTable() {
   } catch { /* sessionStorage tidak tersedia */ }
 }
 
+/** Banner: tombol × menutup dan mengingatnya di perangkat ini (kunci berisi rev, jadi banner yang diubah muncul lagi). */
+function setupBanners() {
+  $$('.bn .bn-x').forEach(btn => btn.addEventListener('click', () => {
+    const bn = btn.closest<HTMLElement>('.bn');
+    if (!bn) return;
+    try { localStorage.setItem('bn:' + bn.dataset.bn, '1'); } catch { /* penyimpanan tidak tersedia */ }
+    bn.hidden = true;
+    if (!$$('.bn').some(el => !el.hidden)) document.body.classList.remove('has-bn');
+  }));
+}
+
 const onScroll = () => $('#site-header')?.classList.toggle('sm', scrollY > 40);
 
 document.addEventListener('astro:after-swap', () => document.documentElement.classList.add('js'));
-document.addEventListener('astro:page-load', () => { setupReveal(); setupNav(); setupDetails(); setupTable(); onScroll(); });
+document.addEventListener('astro:page-load', () => { setupReveal(); setupNav(); setupDetails(); setupTable(); setupBanners(); onScroll(); });
 addEventListener('scroll', onScroll, { passive: true });

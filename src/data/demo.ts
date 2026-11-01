@@ -1,7 +1,13 @@
-import type { Category, Dish, Menu, Site } from './types';
+import { env } from '../lib/env';
+import { mediaUrl } from '../lib/media';
+import type { Banner, Category, Dish, Menu, Site, ThemeColors } from './types';
 
-/** Data contoh: dipakai bila API_URL belum diisi, supaya frontend bisa dijalankan sendiri. */
-export const DEMO_SITE: Site = {
+/**
+ * Data contoh: dipakai bila API_URL belum diisi, supaya frontend bisa dijalankan sendiri.
+ * DEMO_SCENARIO (env, hanya mode contoh) mengaktifkan keadaan dari admin untuk uji visual; boleh beberapa, dipisah koma:
+ *   closed | banners | theme-<id> (giok|teh|samudra|bata|anggur|zaitun|arang) | theme-custom | theme-dark | hero-custom | featured
+ */
+const DEMO_BASE: Site = {
   id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
   translations: {
     id: { brand_name: 'Aisin Vegetarian', tagline: 'Gastronomi Nabati Zen' },
@@ -10,8 +16,51 @@ export const DEMO_SITE: Site = {
   phone: '+86 (021) 8829-1088', whatsapp: null, email: null, maps_url: null,
   address: "Jl. Fumin 188, Distrik Jing'an, Shanghai · Gedung A, Taman Zen",
   opening_hours: { lunch: '11:30-14:30', tea: '14:30-17:00', dinner: '17:30-21:30' },
-  primary_color: null,
+  primary_color: null, theme: null, orders_open: true, hero: { texts: {}, image: null }, banners: [],
 };
+
+/** Hanya untuk mode contoh: salinan warna preset admin (di produksi warna datang dari backend). */
+const PRESET: Record<string, ThemeColors> = {
+  teh: { primary: '#7A4A21', secondary: '#96623A', accent: '#A8402A', bg: '#FBF7F0', bg2: '#F3EADB', ink: '#1E2621', ink2: '#404944', line: 'rgba(122,74,33,.12)' },
+  samudra: { primary: '#1F4E6B', secondary: '#2F6F94', accent: '#B45F14', bg: '#F6F9FB', bg2: '#E8EFF4', ink: '#1E2621', ink2: '#404944', line: 'rgba(31,78,107,.12)' },
+  bata: { primary: '#8E2A2A', secondary: '#A84545', accent: '#8A6414', bg: '#FCF8F4', bg2: '#F5EBE1', ink: '#1E2621', ink2: '#404944', line: 'rgba(142,42,42,.12)' },
+  anggur: { primary: '#5B3A66', secondary: '#75507F', accent: '#A5561B', bg: '#FAF7FA', bg2: '#EFE8F1', ink: '#1E2621', ink2: '#404944', line: 'rgba(91,58,102,.12)' },
+  zaitun: { primary: '#4F5D2F', secondary: '#6B7B45', accent: '#B0532E', bg: '#FAF9F3', bg2: '#EFEDDC', ink: '#1E2621', ink2: '#404944', line: 'rgba(79,93,47,.12)' },
+  arang: { primary: '#2E3A3F', secondary: '#46565C', accent: '#C4481F', bg: '#F8F8F6', bg2: '#ECECE8', ink: '#1E2621', ink2: '#404944', line: 'rgba(46,58,63,.12)' },
+  giok: { primary: '#2B5B47', secondary: '#3D735B', accent: '#C35B3B', bg: '#FBF8F2', bg2: '#F4EEE2', ink: '#1E2621', ink2: '#404944', line: 'rgba(43,91,71,.12)' },
+  custom: { primary: '#6B2D5C', secondary: '#8A4D79', accent: '#B4531A', bg: '#FFFFFF', bg2: '#F3EEF2', ink: '#1E2621', ink2: '#404944', line: 'rgba(107,45,92,.12)' },
+  dark: { primary: '#E8D9A8', secondary: '#EEE2BC', accent: '#B45F14', bg: '#14201A', bg2: '#1C2C24', ink: '#F2EFE9', ink2: '#C9C5BC', line: 'rgba(232,217,168,.14)' },
+};
+
+const scenario = (locals: unknown) => new Set((env(locals, 'DEMO_SCENARIO') || '').split(',').map(x => x.trim()).filter(Boolean));
+
+export function demoSite(locals: unknown): Site {
+  const sc = scenario(locals), site: Site = { ...DEMO_BASE };
+  const preset = [...sc].find(x => x.startsWith('theme-'))?.slice(6);
+  if (preset && PRESET[preset === 'dark' ? 'dark' : preset]) site.theme = { id: preset === 'dark' ? 'custom' : preset, dark: preset === 'dark', colors: PRESET[preset] };
+  if (sc.has('closed')) site.orders_open = false;
+  if (sc.has('hero-custom')) site.hero = {
+    image: mediaUrl(locals, 'restaurant/defaults/aisin/tahu-tiantai-morel.webp'),
+    texts: {
+      eyebrow: { id: 'Dapur rumahan sejak 2010', zh: '家常厨房 · 始于2010' },
+      title: { id: 'Sederhana, hangat,', zh: '简单而温暖，' }, title_em: { id: 'selalu dari hati', zh: '始终出于真心' },
+      lead: { id: 'Masakan nabati yang dimasak pelan setiap pagi dari bahan lokal pilihan.', zh: '每天清晨以当地精选食材慢火烹制的植物料理。' },
+      chip1: { id: 'Bahan lokal', zh: '本地食材' }, chip3: { id: 'Dimasak pagi ini', zh: '今晨现做' },
+      cta_order: { id: 'Pesan dari meja', zh: '扫码点餐' },
+    },
+  };
+  if (sc.has('banners')) {
+    const b = (id: string, kind: Banner['kind'], scope: Banner['scope'], id_: string, zh: string, extra: Partial<Banner> = {}): Banner =>
+      ({ id, kind, scope, link_url: null, blocks_orders: false, rev: 1, text: { id: id_, zh }, link_label: null, ...extra });
+    site.banners = [
+      b('b-holiday', 'holiday', 'all', 'Kami libur selama Lebaran, 1–5 Januari. Selamat berhari raya!', '我们将在1月1日至5日休息，祝节日快乐！'),
+      b('b-promo', 'promo', 'home', 'Promo Imlek: gratis teh pu-erh untuk pemesanan di atas Rp 300.000', '春节优惠：消费满30万印尼盾赠普洱茶', { link_url: '/menu', link_label: { id: 'Lihat menu', zh: '查看菜单' } }),
+      b('b-info', 'info', 'order', 'Pembayaran dilakukan di kasir setelah Anda selesai makan.', '请在用餐后于收银台付款。'),
+    ];
+    if (sc.has('closed')) site.banners[0].blocks_orders = true;
+  }
+  return site;
+}
 
 const cats: Category[] = [
   { slug: 'main', glyph: '馔', name: { id: 'Hidangan Utama', en: 'Main dishes', zh: '主菜' } },
@@ -42,11 +91,13 @@ const seeds: Seed[] = [
   { cat: 'drink', price: 28, name: ['Sirup Plum Asam Dingin', '冰镇酸梅汤'], short: ['Plum asam, hawthorn, dan osmanthus; dingin dan menyegarkan.', '乌梅山楂桂花熬制，冰镇酸甜解腻。'] },
 ];
 
-const dishes: Dish[] = seeds.map((s, n): Dish => ({
-  id: `demo-${n}`, cat: s.cat, price: Math.round((s.price * IDR_PER_YUAN) / 1000) * 1000,
-  img: s.img ? `/images/${s.img}.webp` : null,
-  egg: !!s.egg, onion: false, nonHalal: false, spicy: 0, soldOut: false,
-  name: L(s.name), short: L(s.short), detail: null, badge: s.badge ? L(s.badge) : null,
-}));
-
-export const DEMO_MENU: Menu = { cats, dishes };
+export function demoMenu(locals: unknown): Menu {
+  const sc = scenario(locals), featured = new Set(sc.has('featured') ? ['demo-0', 'demo-2', 'demo-4', 'demo-6', 'demo-5'] : []);
+  const dishes: Dish[] = seeds.map((s, n): Dish => ({
+    id: `demo-${n}`, cat: s.cat, price: Math.round((s.price * IDR_PER_YUAN) / 1000) * 1000,
+    img: s.img ? mediaUrl(locals, `restaurant/defaults/aisin/${s.img}.webp`) : null,
+    egg: !!s.egg, onion: false, nonHalal: false, spicy: 0, soldOut: false, featured: featured.has(`demo-${n}`),
+    name: L(s.name), short: L(s.short), detail: null, badge: s.badge ? L(s.badge) : null,
+  }));
+  return { cats, dishes };
+}

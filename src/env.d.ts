@@ -1,4 +1,4 @@
 /// <reference types="astro/client" />
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;
-interface Env { API_URL?: string; DEFAULT_SITE_SLUG?: string }
+interface Env { API_URL?: string; DEFAULT_SITE_SLUG?: string; MEDIA_URL?: string; DEMO_SCENARIO?: string }
 declare namespace App { interface Locals extends Runtime {} }
