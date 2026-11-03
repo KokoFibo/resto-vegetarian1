@@ -35,6 +35,7 @@ export type Site = {
   slug: string;
   status: string;                       // hanya 'trial' dan 'active' yang ditampilkan
   restaurant_type: RestaurantType;
+  template_id: string;                  // template tampilan (src/templates); id tak dikenal → template bawaan
   languages: string[];                  // urutan: [bahasa utama, bahasa kedua?]
   translations: Record<string, SiteBrand>;
   phone: string | null;

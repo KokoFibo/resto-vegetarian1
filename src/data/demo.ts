@@ -8,7 +8,7 @@ import type { Banner, Category, Dish, Menu, Site, ThemeColors } from './types';
  *   closed | banners | theme-<id> (giok|teh|samudra|bata|anggur|zaitun|arang) | theme-custom | theme-dark | hero-custom | featured
  */
 const DEMO_BASE: Site = {
-  id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
+  template_id: 'aisin', id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
   translations: {
     id: { brand_name: 'Aisin Vegetarian', tagline: 'Gastronomi Nabati Zen' },
     zh: { brand_name: '爱心素食', tagline: '禅意植物料理' },

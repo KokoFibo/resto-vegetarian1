@@ -2,6 +2,7 @@
  * Satu-satunya tempat frontend berbicara dengan backend (lihat API-CONTRACT.md).
  * Tanpa API_URL, frontend memakai data contoh (demo.ts) dan pemesanan dinonaktifkan.
  */
+import { isReservedPlatformHost, requestHost } from '../lib/host';
 import { env } from '../lib/env';
 import { cleanTheme } from '../lib/theme';
 import { demoMenu, demoSite } from './demo';
@@ -74,7 +75,8 @@ async function get<T>(base: string, path: string, params: Record<string, string 
 export async function getSite(request: Request, locals: unknown): Promise<Site | null> {
   const base = baseUrl(locals);
   if (!base) return demoSite(locals);
-  const host = (request.headers.get('host') || new URL(request.url).host).split(':')[0].toLowerCase();
+  const host = requestHost(request);
+  if (!host || isReservedPlatformHost(host, env(locals, 'BASE_DOMAIN'))) return null;   // admin./api./www. bukan restoran
   const site = await get<Site>(base, 'site', { host, slug: env(locals, 'DEFAULT_SITE_SLUG') });
   return site ? normalizeSite(site) : null;
 }

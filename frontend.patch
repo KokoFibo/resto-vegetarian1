@@ -1,0 +1,194 @@
+
+--- a/.env.example	2026-11-02 01:06:06.000000000 +0000
++++ b/.env.example	2026-11-02 07:57:19.642392356 +0000
+@@ -1,6 +1,9 @@
+ # Alamat backend (API publik, mis. api.kokofibo.com). Kosongkan = mode contoh: website menampilkan data bawaan Aisin
+ # dan pemesanan dinonaktifkan. Di Cloudflare isi di Settings > Variables and Secrets.
+-API_URL=https://admin.kokofibo.com
++API_URL=https://admin.kokofibo.it.com
++
++# Domain dasar platform. Subdomain admin./api./www. di bawahnya tidak dianggap restoran.
++BASE_DOMAIN=kokofibo.it.com
+ 
+ # Hanya untuk pengembangan/pratinjau (localhost, *.pages.dev): slug restoran yang ditampilkan
+ # bila domain tidak dikenal. JANGAN diisi di produksi.
+
+--- a/astro.config.mjs	2026-11-02 01:06:06.000000000 +0000
++++ b/astro.config.mjs	2026-11-02 07:57:38.607628591 +0000
+@@ -1,5 +1,5 @@
+ import { defineConfig } from 'astro/config';
+ import cloudflare from '@astrojs/cloudflare';
+ 
+-// SSR: restoran ditentukan dari domain yang dibuka, dan halaman Order membawa data per meja.
+-export default defineConfig({ output: 'server', adapter: cloudflare() });
++// SSR di Cloudflare Workers: restoran ditentukan dari hostname yang dibuka (tenant_domains), template dari site.template_id.
++export default defineConfig({ output: 'server', adapter: cloudflare({ platformProxy: { enabled: true } }) });
+
+--- a/src/data/api.ts	2026-11-02 01:06:06.000000000 +0000
++++ b/src/data/api.ts	2026-11-02 07:57:19.626321667 +0000
+@@ -2,6 +2,7 @@
+  * Satu-satunya tempat frontend berbicara dengan backend (lihat API-CONTRACT.md).
+  * Tanpa API_URL, frontend memakai data contoh (demo.ts) dan pemesanan dinonaktifkan.
+  */
++import { isReservedPlatformHost, requestHost } from '../lib/host';
+ import { env } from '../lib/env';
+ import { cleanTheme } from '../lib/theme';
+ import { demoMenu, demoSite } from './demo';
+@@ -74,7 +75,8 @@
+ export async function getSite(request: Request, locals: unknown): Promise<Site | null> {
+   const base = baseUrl(locals);
+   if (!base) return demoSite(locals);
+-  const host = (request.headers.get('host') || new URL(request.url).host).split(':')[0].toLowerCase();
++  const host = requestHost(request);
++  if (!host || isReservedPlatformHost(host, env(locals, 'BASE_DOMAIN'))) return null;   // admin./api./www. bukan restoran
+   const site = await get<Site>(base, 'site', { host, slug: env(locals, 'DEFAULT_SITE_SLUG') });
+   return site ? normalizeSite(site) : null;
+ }
+
+--- a/src/data/demo.ts	2026-11-02 01:06:06.000000000 +0000
++++ b/src/data/demo.ts	2026-11-02 07:57:19.625826825 +0000
+@@ -8,7 +8,7 @@
+  *   closed | banners | theme-<id> (giok|teh|samudra|bata|anggur|zaitun|arang) | theme-custom | theme-dark | hero-custom | featured
+  */
+ const DEMO_BASE: Site = {
+-  id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
++  template_id: 'aisin', id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
+   translations: {
+     id: { brand_name: 'Aisin Vegetarian', tagline: 'Gastronomi Nabati Zen' },
+     zh: { brand_name: '爱心素食', tagline: '禅意植物料理' },
+
+--- a/src/data/types.ts	2026-11-02 01:06:06.000000000 +0000
++++ b/src/data/types.ts	2026-11-02 07:57:19.625303125 +0000
+@@ -35,6 +35,7 @@
+   slug: string;
+   status: string;                       // hanya 'trial' dan 'active' yang ditampilkan
+   restaurant_type: RestaurantType;
++  template_id: string;                  // template tampilan (src/templates); id tak dikenal → template bawaan
+   languages: string[];                  // urutan: [bahasa utama, bahasa kedua?]
+   translations: Record<string, SiteBrand>;
+   phone: string | null;
+
+--- a/src/lib/host.ts	1970-01-01 00:00:00.000000000 +0000
++++ b/src/lib/host.ts	2026-11-02 07:57:38.811628603 +0000
+@@ -0,0 +1,13 @@
++/** Hostname permintaan → bentuk baku untuk mencari tenant_domains (huruf kecil, tanpa port, tanpa titik akhir). */
++const RESERVED_LABELS = new Set(['admin', 'api', 'www']);   // dilayani proyek lain (admin/API) atau halaman pemasaran
++
++export function requestHost(request: Request): string | null {
++  const raw = (request.headers.get('host') || new URL(request.url).host).split(':')[0].trim().toLowerCase().replace(/\.$/, '');
++  return /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(raw) && raw.length <= 253 ? raw : null;
++}
++
++/** true bila host adalah subdomain platform yang dicadangkan (jangan dicari sebagai restoran). */
++export function isReservedPlatformHost(host: string, baseDomain?: string): boolean {
++  if (!baseDomain || !host.endsWith('.' + baseDomain)) return false;
++  return RESERVED_LABELS.has(host.slice(0, -(baseDomain.length + 1)));
++}
+
+--- a/src/pages/[...path].astro	2026-11-02 01:06:06.000000000 +0000
++++ b/src/pages/[...path].astro	2026-11-02 07:57:19.626688705 +0000
+@@ -1,11 +1,5 @@
+ ---
+-import Base from '../layouts/Base.astro';
+-import Home from '../views/Home.astro';
+-import Menu from '../views/Menu.astro';
+-import Filosofi from '../views/Filosofi.astro';
+-import Order from '../views/Order.astro';
+-import Kontak from '../views/Kontak.astro';
+-import NotFound from '../views/NotFound.astro';
++import { pickTemplate } from '../templates';
+ import { getMenu, getSite, getTable } from '../data/api';
+ import type { Menu as MenuData, Table } from '../data/types';
+ import { LANGS, type Txt } from '../i18n';
+@@ -31,8 +25,10 @@
+ 
+ const slug = parts.join('/');
+ const route = parts.length <= 1 ? routesFor(site).find(r => r.slug === slug) : undefined;
+-const views = { home: Home, menu: Menu, philosophy: Filosofi, order: Order, contact: Kontak };
+-const View = route ? views[route.key] : NotFound;
++// Template dipilih per restoran (site.template_id); id yang tidak dikenal memakai template bawaan.
++const tpl = pickTemplate(site.template_id);
++const Layout = tpl.Base;
++const View = route ? tpl.views[route.key] : tpl.NotFound;
+ if (!route) Astro.response.status = 404;
+ 
+ let menu: MenuData = { cats: [], dishes: [] };
+@@ -47,6 +43,6 @@
+ // Halaman Order memuat data per meja: jangan di-cache bersama.
+ Astro.response.headers.set('Cache-Control', route?.key === 'order' ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
+ ---
+-<Base site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
++<Layout site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
+   <View lang={lang} site={site} menu={menu} table={table} token={token} />
+-</Base>
++</Layout>
+
+--- a/src/templates/README.md	1970-01-01 00:00:00.000000000 +0000
++++ b/src/templates/README.md	2026-11-02 07:57:19.632734673 +0000
+@@ -0,0 +1,8 @@
++# Menambah template baru
++
++1. Buat folder `src/templates/<id>/` berisi layout (`Base.astro`) dan tampilan `Home`, `Menu`, `Filosofi`, `Order`, `Kontak`, `NotFound`
++   (props sama dengan template `aisin`; lihat `src/views/types.ts`). Semua data datang dari `site`/`menu`/`table`; jangan memanggil API sendiri.
++2. Daftarkan di `src/templates/index.ts`.
++3. Aktifkan di database: `insert into public.templates (id, name, description, preview_image, sort) values ('<id>', 'Nama', 'Deskripsi', 'restaurant/templates/<id>.webp', 2);`
++   (id harus sama persis dengan kunci registri). Template yang tidak ada di registri otomatis jatuh ke `aisin`.
++4. Tema warna restoran (`site.theme`) tetap berlaku di semua template lewat variabel CSS; pakai `themeCss()` seperti `Base.astro` aisin.
+
+--- a/src/templates/index.ts	1970-01-01 00:00:00.000000000 +0000
++++ b/src/templates/index.ts	2026-11-02 07:57:19.631987014 +0000
+@@ -0,0 +1,30 @@
++/**
++ * Registri template. Satu aplikasi melayani semua restoran; tampilan dipilih dari site.template_id (tenants.template_id).
++ * Menambah template baru: lihat src/templates/README.md.
++ */
++import type { RouteKey } from '../routes';
++import AisinBase from '../layouts/Base.astro';
++import Home from '../views/Home.astro';
++import Menu from '../views/Menu.astro';
++import Filosofi from '../views/Filosofi.astro';
++import Order from '../views/Order.astro';
++import Kontak from '../views/Kontak.astro';
++import NotFound from '../views/NotFound.astro';
++
++/* eslint-disable @typescript-eslint/no-explicit-any */
++export type Template = {
++  /** Layout halaman: props { site, lang, slug, routeKey?, noindex? }; slot = isi halaman. */
++  Base: any;
++  /** Satu tampilan per rute; props { lang, site, menu, table, token }. */
++  views: Record<RouteKey, any>;
++  NotFound: any;
++};
++
++export const DEFAULT_TEMPLATE = 'aisin';
++
++export const templates: Record<string, Template> = {
++  aisin: { Base: AisinBase, views: { home: Home, menu: Menu, philosophy: Filosofi, order: Order, contact: Kontak }, NotFound },
++  // modern: { Base: ModernBase, views: { ... }, NotFound: ModernNotFound },   ← template berikutnya
++};
++
++export const pickTemplate = (id?: string | null): Template => templates[id ?? ''] ?? templates[DEFAULT_TEMPLATE];
+
+--- a/wrangler.jsonc	1970-01-01 00:00:00.000000000 +0000
++++ b/wrangler.jsonc	2026-11-02 07:57:19.633472782 +0000
+@@ -0,0 +1,20 @@
++{
++  // Satu aplikasi Astro 5 untuk SEMUA restoran. Tidak ada deploy atau DNS per restoran.
++  "name": "dapora-web",
++  "main": "./dist/_worker.js/index.js",
++  "compatibility_date": "2026-10-01",
++  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
++  "assets": { "directory": "./dist", "binding": "ASSETS" },
++
++  // Wildcard Workers Route — butuh record DNS wildcard BERPROKSI (lihat README-DAPORA.md, langkah C2).
++  "routes": [{ "pattern": "*.kokofibo.it.com/*", "zone_name": "kokofibo.it.com" }],
++
++  "vars": {
++    "API_URL": "https://admin.kokofibo.it.com",
++    "BASE_DOMAIN": "kokofibo.it.com",
++    "MEDIA_URL": "https://images.kokofibo.com"
++    // DEFAULT_SITE_SLUG: jangan diisi di produksi
++  }
++  // Bila build/adapter meminta binding SESSION (error "Invalid binding SESSION"), tambahkan:
++  // "kv_namespaces": [{ "binding": "SESSION", "id": "<id-kv>" }]
++}

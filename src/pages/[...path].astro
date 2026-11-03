@@ -1,11 +1,5 @@
 ---
-import Base from '../layouts/Base.astro';
-import Home from '../views/Home.astro';
-import Menu from '../views/Menu.astro';
-import Filosofi from '../views/Filosofi.astro';
-import Order from '../views/Order.astro';
-import Kontak from '../views/Kontak.astro';
-import NotFound from '../views/NotFound.astro';
+import { pickTemplate } from '../templates';
 import { getMenu, getSite, getTable } from '../data/api';
 import type { Menu as MenuData, Table } from '../data/types';
 import { LANGS, type Txt } from '../i18n';
@@ -31,8 +25,10 @@ else if (parts[0] === primary && (LANGS as readonly string[]).includes(parts[0])
 
 const slug = parts.join('/');
 const route = parts.length <= 1 ? routesFor(site).find(r => r.slug === slug) : undefined;
-const views = { home: Home, menu: Menu, philosophy: Filosofi, order: Order, contact: Kontak };
-const View = route ? views[route.key] : NotFound;
+// Template dipilih per restoran (site.template_id); id yang tidak dikenal memakai template bawaan.
+const tpl = pickTemplate(site.template_id);
+const Layout = tpl.Base;
+const View = route ? tpl.views[route.key] : tpl.NotFound;
 if (!route) Astro.response.status = 404;
 
 let menu: MenuData = { cats: [], dishes: [] };
@@ -47,6 +43,6 @@ if (token) { try { table = await getTable(Astro.locals, site, token); } catch (e
 // Halaman Order memuat data per meja: jangan di-cache bersama.
 Astro.response.headers.set('Cache-Control', route?.key === 'order' ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
 ---
-<Base site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
+<Layout site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
   <View lang={lang} site={site} menu={menu} table={table} token={token} />
-</Base>
+</Layout>
