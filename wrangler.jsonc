@@ -1,8 +1,8 @@
 {
   // Satu aplikasi Astro 5 untuk SEMUA restoran. Tidak ada deploy atau DNS per restoran.
-  "name": "dapora-web",
+  "name": "dapora-sites",
   "main": "./dist/_worker.js/index.js",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-01-14",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": "./dist", "binding": "ASSETS" },
 
