@@ -5,10 +5,10 @@
  # Alamat backend (API publik, mis. api.kokofibo.com). Kosongkan = mode contoh: website menampilkan data bawaan Aisin
  # dan pemesanan dinonaktifkan. Di Cloudflare isi di Settings > Variables and Secrets.
 -API_URL=https://admin.kokofibo.com
-+API_URL=https://admin.kokofibo.it.com
++API_URL=https://admin.dapora.id
 +
 +# Domain dasar platform. Subdomain admin./api./www. di bawahnya tidak dianggap restoran.
-+BASE_DOMAIN=kokofibo.it.com
++BASE_DOMAIN=dapora.id
  
  # Hanya untuk pengembangan/pratinjau (localhost, *.pages.dev): slug restoran yang ditampilkan
  # bila domain tidak dikenal. JANGAN diisi di produksi.
@@ -181,11 +181,11 @@
 +  "assets": { "directory": "./dist", "binding": "ASSETS" },
 +
 +  // Wildcard Workers Route — butuh record DNS wildcard BERPROKSI (lihat README-DAPORA.md, langkah C2).
-+  "routes": [{ "pattern": "*.kokofibo.it.com/*", "zone_name": "kokofibo.it.com" }],
++  "routes": [{ "pattern": "*.dapora.id/*", "zone_name": "dapora.id" }],
 +
 +  "vars": {
-+    "API_URL": "https://admin.kokofibo.it.com",
-+    "BASE_DOMAIN": "kokofibo.it.com",
++    "API_URL": "https://admin.dapora.id",
++    "BASE_DOMAIN": "dapora.id",
 +    "MEDIA_URL": "https://images.kokofibo.com"
 +    // DEFAULT_SITE_SLUG: jangan diisi di produksi
 +  }
