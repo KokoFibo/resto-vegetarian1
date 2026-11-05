@@ -70,3 +70,5 @@ Gambar bawaan template ada di R2 pada `restaurant/defaults/aisin/<berkas>.webp` 
 - Set konten **Aisin** (teks Mandarin, pita statistik, halaman Filosofi) hanya dipakai bila `slug = aisin`. Restoran lain memakai set generik (`content/index.ts`): brand/slogan dari backend, tanpa statistik, tanpa Filosofi. Teks hero tetap bisa diganti owner untuk semua restoran.
 - Pengisian Filosofi/statistik/galeri dari admin direncanakan pada tahap berikutnya.
 - Halaman non-Order di-cache 60 detik di tepi Cloudflare, jadi perubahan dari admin muncul dalam ±1 menit.
+
+<!-- ok -->
