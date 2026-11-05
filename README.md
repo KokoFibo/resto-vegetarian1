@@ -71,4 +71,4 @@ Gambar bawaan template ada di R2 pada `restaurant/defaults/aisin/<berkas>.webp` 
 - Pengisian Filosofi/statistik/galeri dari admin direncanakan pada tahap berikutnya.
 - Halaman non-Order di-cache 60 detik di tepi Cloudflare, jadi perubahan dari admin muncul dalam ±1 menit.
 
-<!-- ok -->
+<!-- ok1 -->
