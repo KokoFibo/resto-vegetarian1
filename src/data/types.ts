@@ -80,7 +80,10 @@ export type OrderRequest = {
   items: { id: string; qty: number }[];
   name: string;
   note: string;
+  /** 32 hex acak per perangkat (dibuat di browser) — mengenali pelanggan yang sama di satu meja. */
+  client?: string;
 };
 
-export type OrderResult = { order_no: number | string; table_label: string; total_idr: number };
+export type OrderResult = { order_no: number | string; table_label: string; total_idr: number; my_total_idr?: number };
+export type BillRequestResult = { table_label: string; my_total_idr: number; has_fees: boolean };
 export type OrderError = { code: string };

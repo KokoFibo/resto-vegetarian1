@@ -1,4 +1,12 @@
-# Perubahan kontrak API (v1 → v1.1)
+# Perubahan kontrak API (v1 → v1.1 → v1.2)
+
+## v1.2 — Tagihan meja (hanya tambahan)
+- `POST /v1/orders`: body menerima `client` (32 hex acak per perangkat, opsional); respons menambah `my_total_idr`. Batas pesanan diganti: 1 pesanan/10 dtk **per perangkat** (`E:rate_limited`) dan maks 15 pelanggan per meja (`E:table_full`, 409). `E:too_many_active` tidak dipakai lagi.
+- Endpoint baru `POST /v1/bill-request` (tombol Minta bill) dengan galat `E:no_bill`. Lihat `API-CONTRACT.md`.
+- Backend lama tetap dilayani: frontend baru tanpa `client` tetap bekerja (backend membuatkan acak), dan field respons baru boleh tidak ada.
+
+---
+
 
 Untuk pembuat backend `/v1`. Semuanya **tambahan**: backend lama tetap dilayani (frontend memakai tampilan bawaan bila field tidak ada).
 

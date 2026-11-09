@@ -6,7 +6,7 @@ import { isReservedPlatformHost, requestHost } from '../lib/host';
 import { env } from '../lib/env';
 import { cleanTheme } from '../lib/theme';
 import { demoMenu, demoSite } from './demo';
-import type { Banner, Dish, Hero, HeroKey, Localized, Menu, OrderError, OrderRequest, OrderResult, Site, Table } from './types';
+import type { Banner, BillRequestResult, Dish, Hero, HeroKey, Localized, Menu, OrderError, OrderRequest, OrderResult, Site, Table } from './types';
 
 const TIMEOUT_MS = 8000;
 const TOKEN = /^[0-9a-f]{32}$/;
@@ -110,7 +110,26 @@ export async function sendOrder(locals: unknown, request: Request, input: Partia
         site: site.id, token: String(input.token ?? ''), lang: String(input.lang ?? '').slice(0, 5),
         items: (input.items ?? []).slice(0, 40).map(i => ({ id: String(i.id), qty: Math.round(Number(i.qty)) })),
         name: String(input.name ?? '').slice(0, 60), note: String(input.note ?? '').slice(0, 200),
+        client: TOKEN.test(String(input.client ?? '')) ? String(input.client) : undefined,
       }),
+    });
+    const body = await res.json().catch(() => ({ code: 'E:unavailable' }));
+    return { status: res.status, body };
+  } catch { return unavailable; }
+}
+
+/** Pelanggan menekan "Minta bill": kasir diberi penanda. Idempotent. */
+export async function requestBill(locals: unknown, request: Request, input: { token?: string; client?: string }): Promise<{ status: number; body: BillRequestResult | OrderError }> {
+  const unavailable = { status: 503, body: { code: 'E:unavailable' } };
+  const base = baseUrl(locals);
+  if (!base) return unavailable;
+  let site: Site | null;
+  try { site = await getSite(request, locals); } catch { return unavailable; }
+  if (!site || isDemo(site)) return unavailable;
+  try {
+    const res = await fetch(`${base}/v1/bill-request`, {
+      method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, signal: AbortSignal.timeout(TIMEOUT_MS),
+      body: JSON.stringify({ site: site.id, token: String(input.token ?? ''), client: TOKEN.test(String(input.client ?? '')) ? String(input.client) : undefined }),
     });
     const body = await res.json().catch(() => ({ code: 'E:unavailable' }));
     return { status: res.status, body };

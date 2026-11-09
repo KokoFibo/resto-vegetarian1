@@ -39,7 +39,8 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
       <p><button type="button" class="btn ghost" id="again">{L(ui.order.again)}</button></p>
     </div>
     <form id="orderForm" class="ordergrid" data-token={token} data-lang={lang}
-          data-errs={JSON.stringify(errors)} data-empty={L(ui.order.nothing)} data-ok={L(ui.order.received)}>
+          data-errs={JSON.stringify(errors)} data-empty={L(ui.order.nothing)} data-ok={L(ui.order.received)}
+          data-billok={L(ui.order.billAsked)} data-mytotal={L(ui.order.myTotal)} data-fees={L(ui.order.feesNote)}>
       <div>
         {groups.map(g => (
           <div class="rv ogroup">
@@ -70,5 +71,9 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
         <button class="btn vm" type="submit" id="orderBtn">{L(ui.order.send)}</button>
       </aside>
     </form>
+    <div class="panel scanbox" style="margin-top:1.5rem">
+      <p><button type="button" class="btn" id="billBtn">{L(ui.order.askBill)}</button></p>
+      <p id="billMsg" class="muted" role="status"></p>
+    </div>
   </div></section>
 )}

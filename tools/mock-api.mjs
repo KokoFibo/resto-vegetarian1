@@ -23,6 +23,7 @@ http.createServer((req, res) => {
   if (u.pathname === '/v1/site') return send(200, site);
   if (u.pathname === '/v1/menu') return send(200, menu);
   if (u.pathname === '/v1/table') return /^[0-9a-f]{32}$/.test(u.searchParams.get('token') || '') ? send(200, { label: 'Meja 1' }) : send(404, {});
-  if (u.pathname === '/v1/orders' && req.method === 'POST') return closed ? send(409, { code: 'E:closed' }) : send(200, { order_no: 1, table_label: 'Meja 1', total_idr: 38000 });
+  if (u.pathname === '/v1/orders' && req.method === 'POST') return closed ? send(409, { code: 'E:closed' }) : send(200, { order_no: 1, table_label: 'Meja 1', total_idr: 38000, my_total_idr: 38000 });
+  if (u.pathname === '/v1/bill-request' && req.method === 'POST') return closed ? send(409, { code: 'E:no_bill' }) : send(200, { table_label: 'Meja 1', my_total_idr: 38000, has_fees: true });
   send(404, {});
 }).listen(Number(process.env.PORT) || 4600, () => console.log('API tiruan di http://127.0.0.1:' + (process.env.PORT || 4600)));

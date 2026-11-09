@@ -50,6 +50,7 @@ const api = http.createServer((req, res) => {
   if (u.pathname === '/v1/menu') return res.end(JSON.stringify(MENU));
   if (u.pathname === '/v1/table') return res.end(JSON.stringify({ label: 'Meja 1' }));
   if (u.pathname === '/v1/orders') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:closed' })); }
+  if (u.pathname === '/v1/bill-request') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:no_bill' })); }
   res.statusCode = 404; res.end('{}');
 }).listen(4600);
 
@@ -142,6 +143,10 @@ await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get 
   ok('orders_open=false dari API → Order ditutup', has(o, 'Pemesanan sedang ditutup') && !has(o, 'id="orderForm"'));
   const r = await get('/api/orders', { method: 'POST', headers: { host: 'bistro.test', 'content-type': 'application/json' }, body: JSON.stringify({ token: 'a'.repeat(32), lang: 'id', items: [{ id: 'd1', qty: 1 }] }) });
   ok('POST /api/orders meneruskan 409 + E:closed', r.status === 409 && JSON.parse(r.text).code === 'E:closed', r.text);
+  const rb = await get('/api/bill', { method: 'POST', headers: { host: 'bistro.test', 'content-type': 'application/json' }, body: JSON.stringify({ token: 'a'.repeat(32), client: 'b'.repeat(32) }) });
+  ok('POST /api/bill meneruskan 409 + E:no_bill', rb.status === 409 && JSON.parse(rb.text).code === 'E:no_bill', rb.text);
+  const og = (await get('/order?meja=' + 'a'.repeat(32), { headers: { host: 'good.test' } })).text;
+  ok('halaman Order memuat tombol Minta bill + pesan E:table_full', has(og, 'id="billBtn"') && has(og, 'E:table_full') && has(og, 'data-billok'));
   const g = (await get('/', { headers: { host: 'good.test' } })).text;
   ok('tema valid dari API diterapkan', has(g, '--jade:#1F4E6B') && has(g, '--cta-p:'));
   ok('hero kustom: foto dari API, frame tall, tanpa stempel', has(g, 'hero-1.webp') && has(g, 'frame tall') && !has(g, 'class="stamp"'));

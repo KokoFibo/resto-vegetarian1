@@ -98,25 +98,37 @@ Meja dari token QR.
 
 ```json
 { "site": "uuid", "token": "<32 hex>", "lang": "id",
-  "items": [ { "id": "uuid-menu", "qty": 2 } ], "name": "Anton", "note": "" }
+  "items": [ { "id": "uuid-menu", "qty": 2 } ], "name": "Anton", "note": "", "client": "<32 hex acak per perangkat, opsional>" }
 ```
 
 Frontend sudah membatasi: 1–40 baris, `qty` 1–20, `name` ≤ 60 dan `note` ≤ 200 karakter. **Harga tidak dikirim**; backend menghitung ulang dan tetap wajib memvalidasi semuanya.
 
-- `200` → `{ "order_no": 42, "table_label": "Meja 7", "total_idr": 238000 }`
+- `200` → `{ "order_no": 42, "table_label": "Meja 7", "total_idr": 238000, "my_total_idr": 238000 }` (`my_total_idr` = jumlah pesanan perangkat ini di tagihan meja; field baru, boleh tidak ada)
 - galat → status HTTP yang sesuai dan `{ "code": "…" }`. Kode yang dikenali frontend:
 
 | Kode | Status disarankan | Arti |
 |---|---|---|
 | `E:invalid_table` | 403 | QR tidak valid / meja nonaktif |
 | `E:empty` | 400 | tidak ada hidangan / data tidak valid |
-| `E:rate_limited` | 429 | pesanan terlalu rapat |
-| `E:too_many_active` | 429 | terlalu banyak pesanan aktif di meja |
+| `E:rate_limited` | 429 | perangkat yang sama mengirim lagi < 10 detik (per perangkat, bukan per meja) |
+| `E:table_full` | 409 | meja sudah punya 15 pelanggan (perangkat) yang memesan pada tagihan berjalan — v1.2 |
+| `E:too_many_active` | 429 | tidak dipakai lagi sejak v1.2 (tetap dikenali frontend) |
 | `E:item_unavailable` | 409 | ada hidangan yang sudah tidak tersedia |
 | `E:closed` | 409 | pemesanan ditutup (Tutup sementara / banner Libur yang menutup) — v1.1 |
 | `E:unavailable` | 503 | layanan belum siap (juga dipakai frontend bila backend tidak terjangkau) |
 
 Kode lain ditampilkan sebagai `E:unavailable`.
+
+## POST /v1/bill-request (v1.2)
+
+Pelanggan menekan **Minta bill**. Kasir/manager/owner melihat penandanya di tab Tagihan; Service melihat nama meja tanpa nominal.
+
+```json
+{ "site": "uuid", "token": "<32 hex>", "client": "<32 hex, opsional>" }
+```
+
+- `200` → `{ "table_label": "Meja 7", "my_total_idr": 238000, "has_fees": true }` — `my_total_idr` hanya pesanan perangkat ini (sebelum diskon/pajak/biaya layanan); `has_fees` = ada pajak/biaya layanan di restoran. Idempotent.
+- galat: `E:invalid_table` 403 · `E:no_bill` 409 (belum ada pesanan di meja ini) · `E:unavailable` 503. Frontend meneruskan lewat `POST /api/bill`.
 
 ## Pemetaan Admin → database → API → tampilan
 
