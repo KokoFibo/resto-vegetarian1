@@ -46,6 +46,7 @@ export type Site = {
   opening_hours: Record<string, string> | null;   // { lunch: '11:30-14:30', ... }
   primary_color: string | null;         // usang; abaikan
   theme: Theme | null;                  // null = tampilan bawaan
+  menu_display?: 'photo' | 'text';      // pilihan Owner: 'text' = daftar teks tanpa foto (default 'photo'; backend lama boleh tanpa field ini)
   orders_open: boolean;                 // false = "Tutup sementara" / banner Libur yang menutup pemesanan
   hero: Hero;
   banners: Banner[];                    // sudah disaring tanggal & zona waktu oleh backend; maks 3

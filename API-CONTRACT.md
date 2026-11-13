@@ -49,6 +49,7 @@ Frontend membaca field ini secara defensif: bila tidak ada, `null`, atau tidak v
 | Field | Isi | Sumber di admin / database |
 |---|---|---|
 | `theme` | `null` = tampilan bawaan. Bila ada: `id` (`giok teh samudra bata anggur zaitun arang custom`), `dark`, dan `colors` **yang sudah dihitung backend** | Tab Tampilan Website → Warna: `tenants.theme`, `theme_custom`, `theme_dark` |
+| `menu_display` | `"photo"` (default) atau `"text"` = Owner memilih menu teks saja (daftar ringkas tanpa foto). Backend lama tanpa field ini = `photo`. Foto tetap dikirim di `dish.img`; frontend mengabaikannya pada mode `text` | `tenants.menu_display` |
 | `orders_open` | `false` = pemesanan ditutup | Tombol "Tutup sementara" (`tenants.orders_paused`) **atau** banner Libur dengan `blocks_orders` yang sedang tayang |
 | `hero.texts.<kunci>` | `Localized`; kunci: `eyebrow title title_em lead chip1 chip2 chip3 cta_order cta_menu`. Kunci kosong/tidak ada = teks bawaan | Tab Tampilan Website → Hero: `site_texts` (`hero.<kunci>`) + `site_text_translations` |
 | `hero.image` | URL foto hero (portrait 4:5) atau `null` = foto bawaan | `site_images` slot `hero` |

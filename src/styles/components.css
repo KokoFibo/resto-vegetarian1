@@ -47,3 +47,15 @@ label { display: flex; flex-direction: column; gap: .2rem; font-size: .75rem; fo
 input { font: 400 .95rem var(--sans); padding: .55rem .2rem; background: var(--bg); color: var(--ink); border: 0; border-bottom: 1.5px solid color-mix(in srgb, var(--jade) 20%, transparent); outline: 0; transition: border-color .25s; }
 input:focus { border-color: var(--jade); }
 .err { color: var(--vm); font-size: .85rem; min-height: 1.2em; }
+
+/* Menu tanpa foto: kartu ringkas (mode foto) dan daftar teks (menu_display = text) */
+.card.noph .bd { padding-top: 1.6rem; }
+.dlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 3rem; }
+@media (max-width: 800px) { .dlist { grid-template-columns: minmax(0, 1fr); } }
+.drow { padding: .95rem 0; border-bottom: 1px solid var(--line); display: grid; gap: .3rem; break-inside: avoid; }
+.drow .dline { display: flex; align-items: baseline; gap: .6rem; }
+.drow h3 { margin: 0; font-size: 1.05rem; }
+.drow .dots { flex: 1; border-bottom: 1px dotted var(--line); transform: translateY(-.25rem); min-width: 1rem; }
+.drow .price { white-space: nowrap; font-weight: 600; color: var(--jade); }
+.drow p { margin: 0; font-size: .92rem; }
+.drow .dd { font-size: .85rem; opacity: .85; }

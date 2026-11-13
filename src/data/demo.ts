@@ -5,7 +5,7 @@ import type { Banner, Category, Dish, Menu, Site, ThemeColors } from './types';
 /**
  * Data contoh: dipakai bila API_URL belum diisi, supaya frontend bisa dijalankan sendiri.
  * DEMO_SCENARIO (env, hanya mode contoh) mengaktifkan keadaan dari admin untuk uji visual; boleh beberapa, dipisah koma:
- *   closed | banners | theme-<id> (giok|teh|samudra|bata|anggur|zaitun|arang) | theme-custom | theme-dark | hero-custom | featured
+ *   closed | text-menu | banners | theme-<id> (giok|teh|samudra|bata|anggur|zaitun|arang) | theme-custom | theme-dark | hero-custom | featured
  */
 const DEMO_BASE: Site = {
   template_id: 'aisin', id: 'demo', slug: 'aisin', status: 'active', restaurant_type: 'vegetarian', languages: ['id', 'zh'],
@@ -39,6 +39,7 @@ export function demoSite(locals: unknown): Site {
   const preset = [...sc].find(x => x.startsWith('theme-'))?.slice(6);
   if (preset && PRESET[preset === 'dark' ? 'dark' : preset]) site.theme = { id: preset === 'dark' ? 'custom' : preset, dark: preset === 'dark', colors: PRESET[preset] };
   if (sc.has('closed')) site.orders_open = false;
+  if (sc.has('text-menu')) site.menu_display = 'text';
   if (sc.has('hero-custom')) site.hero = {
     image: mediaUrl(locals, 'restaurant/defaults/aisin/tahu-tiantai-morel.webp'),
     texts: {

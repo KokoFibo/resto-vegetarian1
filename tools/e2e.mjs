@@ -99,6 +99,18 @@ await withServer({ DEMO_SCENARIO: 'closed,banners' }, async get => {
   const zh = (await get('/zh/')).text; ok('banner bahasa Mandarin', has(zh, '春节优惠'));
 });
 
+console.log('\n[3b] tampilan menu: teks saja');
+await withServer({ DEMO_SCENARIO: 'text-menu' }, async get => {
+  const t = (await get('/menu')).text;
+  ok('menu_display=text: daftar teks, tanpa kartu foto', has(t, 'class="dlist"') && has(t, 'class="drow rv"') && !has(t, 'class="card rv"') && !has(t, '<img src='));
+  ok('menu_display=text: nama & harga tampil', has(t, 'Sirup Plum Asam Dingin') && has(t, 'class="price"'));
+});
+await withServer({}, async get => {
+  const t = (await get('/menu')).text;
+  ok('default (photo): kartu seperti biasa, tanpa daftar teks', has(t, 'class="card rv') && !has(t, 'class="dlist"'));
+  ok('menu tanpa foto di mode foto: tanpa kotak placeholder besar', !has(t, 'class="noimg"'));
+});
+
 console.log('\n[4] tema');
 for (const [sc, expect, not] of [['theme-samudra', ['--jade:#1F4E6B', '--vm:#B45F14', '--on-accent:#FFFFFF', '--bg-a90:rgba(246,249,251,0.9)'], ['color-scheme']],
   ['theme-giok', [], [':root{--jade']], ['theme-custom', ['--jade:#6B2D5C'], []], ['theme-dark', ['color-scheme:dark', '--bg:#14201A', '--gold-ink:#E6C65A'], []], ['theme-arang', ['--jade:#2E3A3F'], []]])

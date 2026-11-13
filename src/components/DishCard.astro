@@ -3,16 +3,15 @@ import type { Dish } from '../data/types';
 import { loc } from '../i18n';
 import { idr } from '../lib/format';
 import DishTags from './DishTags.astro';
-import Utensils from './Utensils.astro';
 interface Props { dish: Dish; lang: string; primary: string; delay?: number }
 const { dish, lang, primary, delay = 0 } = Astro.props;
 const name = loc(dish.name, lang, primary);
 const detail = dish.detail ? loc(dish.detail, lang, primary) : '';
 ---
-<article class={'card rv' + (detail ? ' hasd' : '')} style={`--d:${delay}s`} tabindex={detail ? 0 : undefined}>
+<article class={'card rv' + (detail ? ' hasd' : '') + (dish.img ? '' : ' noph')} style={`--d:${delay}s`} tabindex={detail ? 0 : undefined}>
   {dish.img
     ? <div class="im"><img src={dish.img} alt={name} loading="lazy" /></div>
-    : <div class="noimg"><Utensils size={64} /></div>}
+    : null}
   <div class="bd">
     <DishTags dish={dish} lang={lang} primary={primary} />
     <div class="row"><h3>{name}</h3><span class="price">{idr(dish.price)}</span></div>

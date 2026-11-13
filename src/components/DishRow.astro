@@ -1,0 +1,17 @@
+---
+import type { Dish } from '../data/types';
+import { loc } from '../i18n';
+import { idr } from '../lib/format';
+import DishTags from './DishTags.astro';
+interface Props { dish: Dish; lang: string; primary: string }
+const { dish, lang, primary } = Astro.props;
+const name = loc(dish.name, lang, primary);
+const short = loc(dish.short, lang, primary);
+const detail = dish.detail ? loc(dish.detail, lang, primary) : '';
+---
+<li class="drow rv">
+  <div class="dline"><h3>{name}</h3><span class="dots" aria-hidden="true"></span><span class="price">{idr(dish.price)}</span></div>
+  <DishTags dish={dish} lang={lang} primary={primary} />
+  {short && <p class="muted">{short}</p>}
+  {detail && <p class="muted dd">{detail}</p>}
+</li>

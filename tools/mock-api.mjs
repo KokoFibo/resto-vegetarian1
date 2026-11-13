@@ -10,7 +10,7 @@ const site = {
   phone: '+62 811 0000 000', whatsapp: null, email: null, maps_url: null, address: 'Jl. Mawar No. 1, Jakarta',
   opening_hours: { lunch: '10:00-15:00', dinner: '17:00-21:00' }, primary_color: null,
   theme: { id: 'samudra', dark: false, colors: { primary: '#1F4E6B', secondary: '#2F6F94', accent: '#B45F14', bg: '#F6F9FB', bg2: '#E8EFF4', ink: '#1E2621', ink2: '#404944', line: 'rgba(31,78,107,.12)' } },
-  orders_open: !closed,
+  orders_open: !closed, menu_display: process.env.MOCK_TEXT_MENU === '1' ? 'text' : 'photo',
   hero: { image: null, texts: { eyebrow: { id: 'Dapur rumahan sejak 2010', en: 'Home kitchen since 2010' }, title: { id: 'Sederhana, hangat,', en: 'Simple, warm,' }, title_em: { id: 'selalu dari hati', en: 'always from the heart' } } },
   banners: [{ id: 'promo-1', kind: 'promo', scope: 'home', link_url: '/menu', blocks_orders: false, rev: 1, text: { id: 'Promo minggu ini: gratis es teh untuk semua menu utama', en: 'This week: free iced tea with every main dish' }, link_label: { id: 'Lihat menu', en: 'View menu' } }],
 };

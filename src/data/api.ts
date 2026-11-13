@@ -56,6 +56,7 @@ function normalizeSite(site: Site): Site {
   if (!Array.isArray(site.languages) || !site.languages.length) site.languages = ['id'];
   site.theme = cleanTheme(site.theme);
   site.orders_open = site.orders_open !== false;
+  site.menu_display = site.menu_display === 'text' ? 'text' : 'photo';
   site.hero = normalizeHero(site.hero);
   site.banners = normalizeBanners(site.banners);
   return site;

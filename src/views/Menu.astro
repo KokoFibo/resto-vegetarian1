@@ -1,11 +1,13 @@
 ---
 import PageHead from '../components/PageHead.astro';
 import DishCard from '../components/DishCard.astro';
+import DishRow from '../components/DishRow.astro';
 import { href, loc, pick } from '../i18n';
 import { ui } from '../i18n/ui';
 import type { ViewProps } from './types';
 const { lang, site, menu } = Astro.props as ViewProps;
 const primary = site.languages[0];
+const textMode = site.menu_display === 'text';
 const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.cat === c.slug) })).filter(g => g.dishes.length);
 ---
 <PageHead title={pick(ui.menuLabel, lang)}>{pick(ui.menuIntro[site.restaurant_type], lang)}</PageHead>
@@ -16,7 +18,9 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
   {groups.map(g => (
     <div class="cat" id={g.cat.slug}>
       <h2 class="rv">{loc(g.cat.name, lang, primary)}</h2><div class="rule"></div>
-      <div class="g3">{g.dishes.map((d, i) => <DishCard dish={d} lang={lang} primary={primary} delay={i * 0.08} />)}</div>
+      {textMode
+        ? <ul class="dlist">{g.dishes.map(d => <DishRow dish={d} lang={lang} primary={primary} />)}</ul>
+        : <div class="g3">{g.dishes.map((d, i) => <DishCard dish={d} lang={lang} primary={primary} delay={i * 0.08} />)}</div>}
     </div>
   ))}
   <p class="rv more"><a class="btn vm" href={href(site, lang, 'order')}>{pick(ui.orderNow, lang)}</a></p>
