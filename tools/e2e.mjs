@@ -41,6 +41,7 @@ const SITES = {
     orders_open: true, hero: { texts: {}, image: 'https://images.test/restaurant/tenants/good/site/hero-1.webp' }, banners: [] },
   'old.test': { id: 's3', slug: 'old', status: 'active', restaurant_type: 'vegetarian', languages: ['id'], translations: { id: { brand_name: 'Backend Lama', tagline: 'x' } }, phone: null, whatsapp: null, email: null, maps_url: null, address: null, opening_hours: null, primary_color: null },
 };
+SITES['text.test'] = { ...SITES['good.test'], id: 's4', slug: 'text', menu_display: 'text' };   // backend sungguhan mengirim menu_display
 const MENU = { cats: [{ slug: 'main', glyph: '', name: { id: 'Utama' } }], dishes: [
   { id: 'd1', cat: 'main', price: 30000, img: 'https://images.test/restaurant/tenants/x/menu/a.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, featured: true, name: { id: 'Nasi A' }, short: { id: 'enak' }, detail: null, badge: null },
   { id: 'd2', cat: 'main', price: 20000, img: 'https://images.test/restaurant/tenants/x/menu/b.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'enak' }, detail: null, badge: null }] };
@@ -99,6 +100,11 @@ await withServer({ DEMO_SCENARIO: 'closed,banners' }, async get => {
   const zh = (await get('/zh/')).text; ok('banner bahasa Mandarin', has(zh, '春节优惠'));
 });
 
+console.log('\n[3a] garis pembatas');
+{
+  const css = (await import('node:fs')).readFileSync(new URL('../src/styles/components.css', import.meta.url), 'utf8');
+  ok('garis pembatas (.rule) tidak memuat karakter 心', !/\.rule[^{}]*::after/.test(css) && !css.includes('content: "心"'));
+}
 console.log('\n[3b] tampilan menu: teks saja');
 await withServer({ DEMO_SCENARIO: 'text-menu' }, async get => {
   const t = (await get('/menu')).text;
@@ -163,6 +169,9 @@ await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get 
   ok('tema valid dari API diterapkan', has(g, '--jade:#1F4E6B') && has(g, '--cta-p:'));
   ok('hero kustom: foto dari API, frame tall, tanpa stempel', has(g, 'hero-1.webp') && has(g, 'frame tall') && !has(g, 'class="stamp"'));
   ok('tanpa featured di API → tampil 2 hidangan berfoto (maks 3)', true);
+  const tm = (await get('/menu', { headers: { host: 'text.test' } })).text, gm = (await get('/menu', { headers: { host: 'good.test' } })).text;
+  ok('JALUR API: menu_display=text dari backend → daftar teks, tanpa foto', has(tm, 'class="dlist"') && has(tm, 'Nasi A') && !has(tm, 'class="card rv') && !has(tm, 'a.webp'));
+  ok('JALUR API: tanpa menu_display (good.test) → kartu foto seperti biasa', has(gm, 'class="card rv') && !has(gm, 'class="dlist"'));
   const old = await get('/', { headers: { host: 'old.test' } }); ok('backend lama (tanpa field baru) tetap 200', old.status === 200 && !has(old.text, 'data-bn') && !has(old.text, ':root{--jade'));
   const m = (await get('/', { headers: { host: 'good.test' } })).text; ok('featured dari API menentukan Hidangan pilihan (Nasi A saja)', has(m, 'Nasi A') && !(m.split('<section class="alt">')[1] || '').split('</section>')[0].includes('Nasi B'));
   ok('host tak dikenal → 404 teks', (await get('/', { headers: { host: 'nope.test' } })).status === 404);

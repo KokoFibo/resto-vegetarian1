@@ -1,4 +1,6 @@
-# Aisin — frontend
+# Arunika — frontend
+
+> Nama tampilan template ini **Arunika**; id teknisnya tetap `aisin` (kunci di database, registri template, dan tautan pendaftaran). Restoran dengan slug `aisin` (Aisin Vegetarian) adalah restoran tersendiri, bukan template.
 
 Website pengunjung restoran (Astro, SSR di Cloudflare). Berisi **hanya** tampilan: Beranda, Menu, Filosofi, Order (lewat QR meja), dan Kontak, dalam maksimal 2 bahasa per restoran. Tidak ada halaman pengelolaan, tidak ada kunci rahasia, dan tidak ada akses langsung ke database, penyimpanan foto, atau AI.
 
@@ -70,5 +72,3 @@ Gambar bawaan template ada di R2 pada `restaurant/defaults/aisin/<berkas>.webp` 
 - Set konten **Aisin** (teks Mandarin, pita statistik, halaman Filosofi) hanya dipakai bila `slug = aisin`. Restoran lain memakai set generik (`content/index.ts`): brand/slogan dari backend, tanpa statistik, tanpa Filosofi. Teks hero tetap bisa diganti owner untuk semua restoran.
 - Pengisian Filosofi/statistik/galeri dari admin direncanakan pada tahap berikutnya.
 - Halaman non-Order di-cache 60 detik di tepi Cloudflare, jadi perubahan dari admin muncul dalam ±1 menit.
-
-<!-- test -->

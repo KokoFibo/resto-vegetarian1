@@ -13,8 +13,6 @@
 .chip.warn { border-color: color-mix(in srgb, var(--vm) 40%, transparent); color: var(--vm); background: color-mix(in srgb, var(--vm) 7%, transparent); }
 
 .rule { height: 1px; background: var(--line); margin: 1.5rem 0; position: relative; }
-.rule::after { content: "心"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--bg); padding: 0 .75rem; color: var(--vm); font: .9rem var(--serif); }
-.alt .rule::after { background: var(--bg2); }
 
 .card { position: relative; background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: transform .4s, box-shadow .4s; }
 .alt .card { background: var(--bg); }
