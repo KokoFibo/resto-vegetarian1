@@ -24,25 +24,28 @@ if (secondary && parts[0] === secondary) { lang = secondary; parts.shift(); }
 else if (parts[0] === primary && (LANGS as readonly string[]).includes(parts[0])) return Astro.redirect('/' + parts.slice(1).join('/'));
 
 const slug = parts.join('/');
-const route = parts.length <= 1 ? routesFor(site).find(r => r.slug === slug) : undefined;
+const TOKEN = /^[0-9a-f]{32}$/;
+// /pesanan/<token> = status pesanan online (dua segmen); selain itu satu segmen.
+const route = parts.length === 2 && parts[0] === 'pesanan' && TOKEN.test(parts[1]) ? routesFor(site).find(r => r.key === 'pesanan') : parts.length <= 1 ? routesFor(site).find(r => r.slug === slug && r.key !== 'pesanan') : undefined;
 // Template dipilih per restoran (site.template_id); id yang tidak dikenal memakai template bawaan.
 const tpl = pickTemplate(site.template_id);
 const Layout = tpl.Base;
-const View = route ? tpl.views[route.key] : tpl.NotFound;
-if (!route) Astro.response.status = 404;
+const RouteView = route ? tpl.views[route.key] : undefined;   // template tanpa tampilan untuk rute ini → 404
+const View = RouteView ?? tpl.NotFound;
+if (!RouteView) Astro.response.status = 404;
 
 let menu: MenuData = { cats: [], dishes: [] };
-if (route && ['home', 'menu', 'order'].includes(route.key)) {
+if (route && RouteView && ['home', 'menu', 'order', 'pesan'].includes(route.key)) {
   try { menu = await getMenu(Astro.locals, site); } catch (e) { console.error('getMenu gagal:', e); return plain(ui.unavailable, 503); }
 }
 
-const token = route?.key === 'order' ? Astro.url.searchParams.get('meja') || '' : '';
+const token = route?.key === 'order' ? Astro.url.searchParams.get('meja') || '' : route?.key === 'pesanan' ? parts[1] : '';
 let table: Table | null = null;
 if (token) { try { table = await getTable(Astro.locals, site, token); } catch (e) { console.error('getTable gagal:', e); } }
 
 // Halaman Order memuat data per meja: jangan di-cache bersama.
-Astro.response.headers.set('Cache-Control', route?.key === 'order' ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
+Astro.response.headers.set('Cache-Control', route && ['order', 'pesan', 'pesanan'].includes(route.key) ? 'no-store' : 'public, max-age=0, s-maxage=60, stale-while-revalidate=60');
 ---
-<Layout site={site} lang={lang} slug={route ? slug : ''} routeKey={route?.key} noindex={!route}>
+<Layout site={site} lang={lang} slug={RouteView ? slug : ''} routeKey={route?.key} noindex={!RouteView || route?.key === 'pesanan'}>
   <View lang={lang} site={site} menu={menu} table={table} token={token} />
 </Layout>

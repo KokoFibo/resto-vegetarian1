@@ -29,6 +29,7 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
     <span class="jade"><Utensils size={44} /></span>
     <h3>{L(ui.order.scanTitle)}</h3><p>{L(ui.order.scanBody)}</p>
     <p><a class="btn" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a></p>
+    {site.online?.enabled && <p><a class="btn vm" href={href(site, lang, 'pesan')}>{L(ui.online.or)}</a></p>}
   </div></div></section>
 ) : (
   <section class="after-head"><div class="wrap">

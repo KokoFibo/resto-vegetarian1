@@ -1,4 +1,4 @@
-# Kontrak API frontend ↔ backend (v1.1)
+# Kontrak API frontend ↔ backend (v1.4)
 
 > v1.1 hanya **menambah** field (tema, hero, banner, `orders_open`, `featured`) dan kode galat `E:closed`; semua field v1 tetap. Daftar perubahan: [`CHANGELOG-KONTRAK.md`](./CHANGELOG-KONTRAK.md).
 
@@ -155,3 +155,42 @@ Gambar bawaan (hero default, koki, janji kemurnian, dan gambar mode contoh) ada 
 - Timeout panggilan dari frontend: 8 detik.
 - Halaman selain Order di-cache di tepi Cloudflare selama 60 detik; perubahan menu, tema, banner, dan tutup sementara muncul dalam kira-kira semenit. Halaman Order tidak di-cache.
 - Bila `API_URL` kosong, frontend memakai data contoh dan menolak pesanan dengan `E:unavailable`.
+
+
+## Pesanan online / takeaway (v1.4)
+
+Pelanggan memesan lewat `/pesan` tanpa QR meja. Pesanan **menunggu konfirmasi staf** (`pending`) dan baru masuk dapur setelah diterima. Tidak dikonfirmasi dalam 15 menit = `expired` otomatis.
+
+**Field di Site:** `online: { enabled: boolean, prepay: boolean, qris_url: string|null, pickup_note: string|null }`. `prepay` = bayar di muka lewat QRIS statis restoran (ada gambar QRIS). Tutup sementara (`orders_open=false`) juga menutup pesanan online.
+
+### POST /v1/online-orders
+
+```json
+{ "site": "<site.id>", "lang": "id", "items": [{ "id": "<dish.id>", "qty": 2 }], "name": "Budi", "phone": "0812 3456 7890",
+  "pickup_by": "customer", "pay_plan": "at_pickup", "note": "jam 7", "client": "<32 hex>" }
+```
+
+- `pickup_by`: `customer` | `courier`. `pay_plan`: `at_pickup` (bayar saat mengambil, di kasir) | `prepay_qris`.
+- Harga tidak pernah dikirim; backend menghitung ulang dari menu. Nomor WhatsApp dinormalkan (08… → 628…), disimpan terpisah dari pesanan, hanya terbaca Owner/Manager/Cashier, dan **dihapus otomatis setelah 30 hari**.
+- `200` → `{ "order_no": "0007", "token": "<32 hex>", "status": "pending", "pickup_by": "...", "pay_plan": "...", "figures": { "subtotal": 60000, "service_pct": 5, "service": 3000, "tax_pct": 10, "tax": 6300, "total": 69300 }, "total_idr": 69300 }`
+- Galat (`{ "code": … }`): `E:online_off` 409 · `E:closed` 409 · `E:empty` 400 · `E:name_required` 400 · `E:phone_invalid` 400 · `E:prepay_off` 409 · `E:rate_limited` 429 · `E:pending_full` 429 · `E:item_unavailable` 409 · `E:unavailable` 503.
+- Batas (di database): 1 pesanan per 60 detik per perangkat **dan** per nomor; maks 3 pesanan menunggu per perangkat/nomor; maks 30 menunggu per restoran.
+
+### GET /v1/online-orders?site=<site.id>&token=<32 hex>
+
+```json
+{ "order_no": "0007", "status": "ready", "name": "Budi", "pickup_by": "courier", "pay_plan": "at_pickup", "pay_claimed": false, "paid": false,
+  "reject_reason": null, "created_at": "2026-11-17T10:00:00Z", "note": null,
+  "figures": { "subtotal": 60000, "discount": 0, "service": 3000, "tax": 6300, "total": 69300 },
+  "items": [{ "name": "Nasi A", "qty": 2, "line_total": 60000 }] }
+```
+
+`status`: `pending` (menunggu konfirmasi) · `new` · `preparing` · `ready` (siap diambil) · `done` · `cancelled` · `rejected` (`reject_reason` bisa diisi) · `expired`. Tanpa nomor WhatsApp. Token salah → `404 { "code": "E:invalid_order" }`.
+
+### POST /v1/online-claim
+
+`{ "site": "...", "token": "..." }` → `200 { "ok": true }`. "Saya sudah bayar" (hanya jalur `prepay_qris`, hanya saat `pending`); staf memverifikasi di aplikasi merchant lalu menekan "Pembayaran diterima". Idempotent. Galat: `E:invalid_order` 404.
+
+### Frontend
+
+`/pesan`, `/pesanan/<token>`, penerus `/api/pesan` (memeriksa Turnstile bila `TURNSTILE_SECRET` diisi) dan `/api/pesanan` (GET status, POST klaim bayar). Total pelanggan = `figures.total` (sudah termasuk pajak dan biaya layanan), ditampilkan dalam rupiah eksak.

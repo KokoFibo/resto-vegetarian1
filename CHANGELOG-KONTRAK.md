@@ -1,4 +1,15 @@
-# Perubahan kontrak API (v1 → v1.1 → v1.2)
+# Perubahan kontrak API (v1 → v1.1 → v1.2 → v1.3 → v1.4)
+
+## v1.4 — Pesanan online / takeaway (hanya tambahan)
+
+- `GET /v1/site` → field baru **`online`**: `{ enabled, prepay, qris_url, pickup_note }`. Backend lama tanpa field ini = pesanan online mati (frontend menganggap `enabled=false`; `prepay` hanya aktif bila `qris_url` berupa `https://…`).
+- **`POST /v1/online-orders`** `{ site, lang, items[{id,qty}], name, phone, pickup_by, pay_plan, note, client? }` → `{ order_no, token, status:"pending", pickup_by, pay_plan, figures, total_idr }`. `total_idr` = total AKHIR (sudah termasuk biaya layanan dan pajak): itu yang dibayar pelanggan.
+- **`GET /v1/online-orders?site=&token=`** → status untuk halaman pelanggan (tanpa nomor WhatsApp). `status`: `pending new preparing ready done cancelled rejected expired`.
+- **`POST /v1/online-claim`** `{ site, token }` → `{ ok:true }` ("Saya sudah bayar", jalur QRIS; idempotent).
+- Kode galat baru: `E:online_off` (409), `E:name_required` (400), `E:phone_invalid` (400), `E:prepay_off` (409), `E:pending_full` (429), `E:invalid_order` (404); frontend menambah `E:captcha` (403, Turnstile). Kode lama dipakai ulang: `E:closed`, `E:empty`, `E:rate_limited`, `E:item_unavailable`, `E:unavailable`.
+- Halaman frontend baru: **`/pesan`** (formulir) dan **`/pesanan/<token>`** (status, memuat ulang sendiri). Muncul hanya bila `site.online.enabled`; template yang belum punya tampilannya menjawab 404 untuk dua rute itu.
+- Konfigurasi frontend baru (opsional): `TURNSTILE_SITEKEY` (publik) dan `TURNSTILE_SECRET` (rahasia). Tanpa keduanya, pemeriksaan Turnstile dilewati.
+- Nominal di halaman pesanan online memakai **rupiah eksak** (`Rp 69.300`), bukan `IDR 69k` seperti label menu, karena pelanggan QRIS harus mengetik nominal yang tepat.
 
 ## v1.3 — Tampilan menu (hanya tambahan)
 - `Site.menu_display`: `"photo" | "text"`, default `photo`. Mode `text` = daftar menu tanpa foto. Field boleh tidak ada (= `photo`).

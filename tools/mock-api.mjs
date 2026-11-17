@@ -10,6 +10,7 @@ const site = {
   phone: '+62 811 0000 000', whatsapp: null, email: null, maps_url: null, address: 'Jl. Mawar No. 1, Jakarta',
   opening_hours: { lunch: '10:00-15:00', dinner: '17:00-21:00' }, primary_color: null,
   theme: { id: 'samudra', dark: false, colors: { primary: '#1F4E6B', secondary: '#2F6F94', accent: '#B45F14', bg: '#F6F9FB', bg2: '#E8EFF4', ink: '#1E2621', ink2: '#404944', line: 'rgba(31,78,107,.12)' } },
+  online: { enabled: true, prepay: true, qris_url: 'https://images.test/restaurant/tenants/bistro/qris/qris-1.webp', pickup_note: 'Ambil di kasir depan.' },
   orders_open: !closed, menu_display: process.env.MOCK_TEXT_MENU === '1' ? 'text' : 'photo',
   hero: { image: null, texts: { eyebrow: { id: 'Dapur rumahan sejak 2010', en: 'Home kitchen since 2010' }, title: { id: 'Sederhana, hangat,', en: 'Simple, warm,' }, title_em: { id: 'selalu dari hati', en: 'always from the heart' } } },
   banners: [{ id: 'promo-1', kind: 'promo', scope: 'home', link_url: '/menu', blocks_orders: false, rev: 1, text: { id: 'Promo minggu ini: gratis es teh untuk semua menu utama', en: 'This week: free iced tea with every main dish' }, link_label: { id: 'Lihat menu', en: 'View menu' } }],
@@ -25,5 +26,8 @@ http.createServer((req, res) => {
   if (u.pathname === '/v1/table') return /^[0-9a-f]{32}$/.test(u.searchParams.get('token') || '') ? send(200, { label: 'Meja 1' }) : send(404, {});
   if (u.pathname === '/v1/orders' && req.method === 'POST') return closed ? send(409, { code: 'E:closed' }) : send(200, { order_no: 1, table_label: 'Meja 1', total_idr: 38000, my_total_idr: 38000 });
   if (u.pathname === '/v1/bill-request' && req.method === 'POST') return closed ? send(409, { code: 'E:no_bill' }) : send(200, { table_label: 'Meja 1', my_total_idr: 38000, has_fees: true });
+  if (u.pathname === '/v1/online-orders' && req.method === 'POST') return closed ? send(409, { code: 'E:closed' }) : send(200, { order_no: '0001', token: 'a'.repeat(32), status: 'pending', pickup_by: 'customer', pay_plan: 'at_pickup', figures: { subtotal: 38000, total: 41800 }, total_idr: 41800 });
+  if (u.pathname === '/v1/online-orders') return send(200, { order_no: '0001', status: 'pending', name: 'Budi', pickup_by: 'customer', pay_plan: 'prepay_qris', pay_claimed: false, paid: false, reject_reason: null, created_at: new Date().toISOString(), note: null, figures: { subtotal: 38000, service: 0, tax: 3800, total: 41800 }, items: [{ name: 'Tahu Jamur', qty: 1, line_total: 38000 }] });
+  if (u.pathname === '/v1/online-claim' && req.method === 'POST') return send(200, { ok: true });
   send(404, {});
 }).listen(Number(process.env.PORT) || 4600, () => console.log('API tiruan di http://127.0.0.1:' + (process.env.PORT || 4600)));

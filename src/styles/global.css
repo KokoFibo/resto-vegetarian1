@@ -1,3 +1,18 @@
 @import './base.css';
 @import './components.css';
 @import './pages.css';
+
+/* ---- pesanan online ---- */
+.sum .small,.scanbox .small{font-size:.82rem}
+.sum fieldset.choice{border:1px solid var(--lin);border-radius:8px;padding:.5rem .8rem .7rem;margin:.6rem 0}
+.sum fieldset.choice legend{font-size:.85rem;padding:0 .3rem}
+.sum fieldset.choice label{display:flex;gap:.5rem;align-items:center;margin:.3rem 0}
+.sum fieldset.choice input{width:auto}
+.captcha{margin:.6rem 0;min-height:65px}
+#statusBox{text-align:left;max-width:34rem;margin-inline:auto}
+#statusBox h3{margin:.2rem 0 .6rem}
+#statusBox h3.st-ready{color:var(--jade)}#statusBox h3.st-rejected,#statusBox h3.st-cancelled,#statusBox h3.st-expired{color:var(--vm)}
+.qrisbox,.pickbox{border:1px solid var(--lin);border-radius:10px;padding:.9rem 1rem;margin:.8rem 0;background:var(--bg2)}
+.qrisimg{display:block;max-width:15rem;width:100%;height:auto;margin:.6rem auto;background:#fff;border-radius:8px;padding:.4rem}
+.stinfo,.stsum{margin:.8rem 0}.stinfo .row,.stsum .row,.stlines .row{display:flex;justify-content:space-between;gap:1rem}
+.stlines{list-style:none;padding:0;margin:.3rem 0}.stsum .total{border-top:1px solid var(--lin);margin-top:.3rem;padding-top:.3rem}

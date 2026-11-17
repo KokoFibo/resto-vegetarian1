@@ -1,0 +1,26 @@
+---
+import PageHead from '../components/PageHead.astro';
+import { href, pick } from '../i18n';
+import { ui } from '../i18n/ui';
+import type { ViewProps } from './types';
+const { lang, site, token } = Astro.props as ViewProps;
+const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
+const o = ui.online;
+// Semua teks dikirim ke skrip sebagai data (skrip tidak memuat kamus bahasa).
+const T = {
+  status: Object.fromEntries(Object.entries(o.s).map(([k, t]) => [k, pick(t, lang)])),
+  errs: Object.fromEntries(Object.entries(ui.errors).map(([code, t]) => [code, pick(t, lang)])),
+  number: L(o.number), for: L(o.name), pickupBy: L(o.pickupBy), byCustomer: L(o.byCustomer), byCourier: L(o.byCourier),
+  items: L(o.items), subtotal: L(o.subtotal), service: L(o.service), tax: L(o.tax), toPay: L(o.toPay), pending: L(o.pendingHint),
+  payAtPickup: L(o.payAtPickupInfo), qrisTitle: L(o.qrisTitle), qrisBody: L(o.qrisBody), iPaid: L(o.iPaid), claimed: L(o.claimed), paidOk: L(o.paidOk),
+  refund: L(o.refundNote), reason: L(o.reason), notFound: L(o.notFound), wa: L(o.waNote), pickupInfo: L(o.pickupInfo),
+};
+---
+<PageHead title={L(o.statusTitle)}>{L(o.keepLink)}</PageHead>
+<section class="after-head"><div class="wrap">
+  <div id="statusBox" class="panel scanbox" data-token={token} data-lang={lang} data-i18n={JSON.stringify(T)}
+       data-qris={site.online?.qris_url || ''} data-pickup={site.online?.pickup_note || ''} aria-live="polite">
+    <p class="muted" id="statusLoading">{L(o.loading)}</p>
+  </div>
+  <p style="margin-top:1.2rem"><a class="btn ghost" href={href(site, lang, 'pesan')}>{L(o.again)}</a></p>
+</div></section>

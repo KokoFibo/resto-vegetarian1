@@ -41,12 +41,21 @@ const SITES = {
     orders_open: true, hero: { texts: {}, image: 'https://images.test/restaurant/tenants/good/site/hero-1.webp' }, banners: [] },
   'old.test': { id: 's3', slug: 'old', status: 'active', restaurant_type: 'vegetarian', languages: ['id'], translations: { id: { brand_name: 'Backend Lama', tagline: 'x' } }, phone: null, whatsapp: null, email: null, maps_url: null, address: null, opening_hours: null, primary_color: null },
 };
+const ONLINE = { enabled: true, prepay: true, qris_url: 'https://images.test/restaurant/tenants/ol/qris/qris-1.webp', pickup_note: 'Ambil di kasir depan.' };
+SITES['online.test'] = { ...SITES['good.test'], id: 's5', slug: 'ol', languages: ['id', 'en'], translations: { id: { brand_name: 'Warung Online', tagline: null }, en: { brand_name: 'Online Eatery', tagline: null } }, online: ONLINE };
+SITES['onlinenoqr.test'] = { ...SITES['good.test'], id: 's6', slug: 'olnq', online: { enabled: true, prepay: true, qris_url: null, pickup_note: null } };   // prepay tanpa gambar QRIS harus dianggap mati
+SITES['onlineclosed.test'] = { ...SITES['good.test'], id: 's7', slug: 'olc', orders_open: false, online: ONLINE };
+SITES['onlinejunk.test'] = { ...SITES['good.test'], id: 's8', slug: 'olj', online: { enabled: 'yes', prepay: 1, qris_url: 'javascript:alert(1)', pickup_note: 5 } };
 SITES['text.test'] = { ...SITES['good.test'], id: 's4', slug: 'text', menu_display: 'text' };   // backend sungguhan mengirim menu_display
 const MENU = { cats: [{ slug: 'main', glyph: '', name: { id: 'Utama' } }], dishes: [
   { id: 'd1', cat: 'main', price: 30000, img: 'https://images.test/restaurant/tenants/x/menu/a.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, featured: true, name: { id: 'Nasi A' }, short: { id: 'enak' }, detail: null, badge: null },
   { id: 'd2', cat: 'main', price: 20000, img: 'https://images.test/restaurant/tenants/x/menu/b.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'enak' }, detail: null, badge: null }] };
+let lastOnline = null, onlineCalls = 0;
 const api = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x'); res.setHeader('content-type', 'application/json');
+  if (u.pathname === '/v1/online-orders' && req.method === 'POST') { onlineCalls++; let b = ''; req.on('data', d => (b += d)); req.on('end', () => { lastOnline = JSON.parse(b); res.end(JSON.stringify({ order_no: '0007', token: 'c'.repeat(32), status: 'pending', pickup_by: lastOnline.pickup_by, pay_plan: lastOnline.pay_plan, figures: { subtotal: 60000, total: 69300 }, total_idr: 69300 })); }); return; }
+  if (u.pathname === '/v1/online-orders') { const t = u.searchParams.get('token'); if (t !== 'c'.repeat(32)) { res.statusCode = 404; return res.end(JSON.stringify({ code: 'E:invalid_order' })); } return res.end(JSON.stringify({ order_no: '0007', status: 'ready', name: 'Budi', pickup_by: 'courier', pay_plan: 'at_pickup', pay_claimed: false, paid: false, reject_reason: null, created_at: '2026-11-17T10:00:00Z', note: null, figures: { subtotal: 60000, service: 3000, tax: 6300, total: 69300 }, items: [{ name: 'Nasi A', qty: 2, line_total: 60000 }] })); }
+  if (u.pathname === '/v1/online-claim' && req.method === 'POST') return res.end(JSON.stringify({ ok: true }));
   if (u.pathname === '/v1/site') { const s = SITES[u.searchParams.get('host')]; res.statusCode = s ? 200 : 404; return res.end(JSON.stringify(s || { error: 'nf' })); }
   if (u.pathname === '/v1/menu') return res.end(JSON.stringify(MENU));
   if (u.pathname === '/v1/table') return res.end(JSON.stringify({ label: 'Meja 1' }));
@@ -175,6 +184,70 @@ await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get 
   const old = await get('/', { headers: { host: 'old.test' } }); ok('backend lama (tanpa field baru) tetap 200', old.status === 200 && !has(old.text, 'data-bn') && !has(old.text, ':root{--jade'));
   const m = (await get('/', { headers: { host: 'good.test' } })).text; ok('featured dari API menentukan Hidangan pilihan (Nasi A saja)', has(m, 'Nasi A') && !(m.split('<section class="alt">')[1] || '').split('</section>')[0].includes('Nasi B'));
   ok('host tak dikenal → 404 teks', (await get('/', { headers: { host: 'nope.test' } })).status === 404);
+});
+
+console.log('\n[7] pesanan online (takeaway)');
+const post = (get, host, path, body) => get(path, { method: 'POST', headers: { host, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const T7 = 'c'.repeat(32);
+await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get => {
+  const h = host => ({ headers: { host } });
+  const home = (await get('/', h('online.test'))).text;
+  ok('online aktif: nav memuat "Pesan online" → /pesan', has(home, 'href="/pesan"') && has(home, 'Pesan online'));
+  ok('halaman status tidak masuk navigasi', !has(home, 'href="/pesanan"'));
+  const off = (await get('/', h('good.test'))).text;
+  ok('online mati/tanpa field (good.test): tanpa tautan /pesan', !has(off, '/pesan'));
+  const p404 = await get('/pesan', h('good.test')); ok('online mati: /pesan = 404', p404.status === 404);
+  const old404 = await get('/pesan', h('old.test')); ok('backend lama: /pesan = 404 (bukan galat)', old404.status === 404);
+  const junk = await get('/pesan', h('onlinejunk.test')); ok('field online sampah (tipe salah, javascript:) → dianggap mati: 404', junk.status === 404, String(junk.status));
+  const pr = await get('/pesan', h('online.test')); const p = pr.text;
+  ok('/pesan 200, formulir online + nama, WA, diambil oleh', pr.status === 200 && has(p, 'id="pesanForm"') && has(p, 'name="phone"') && has(p, 'name="pickup_by"') && has(p, 'value="courier"'));
+  ok('/pesan: nama & WA wajib (required)', /name="name"[^>]*required/.test(p) && /name="phone"[^>]*required/.test(p));
+  ok('/pesan: opsi bayar QRIS tampil bila prepay aktif', has(p, 'value="prepay_qris"') && has(p, 'value="at_pickup"'));
+  ok('/pesan: harga menu & subtotal EKSAK (Rp 30.000), bukan dibulatkan "30k"', has(p, 'Rp 30.000') && !has(p, 'IDR 30k'));
+  ok('/pesan: Cache-Control no-store', pr.headers.get('cache-control') === 'no-store');
+  ok('/pesan: kunci Turnstile kosong → tanpa widget', !has(p, 'id="captcha"'));
+  ok('/pesan: pesan galat baru tersedia untuk skrip', has(p, 'E:phone_invalid') && has(p, 'E:pending_full') && has(p, 'E:name_required'));
+  const nq = (await get('/pesan', h('onlinenoqr.test'))).text; ok('prepay tanpa gambar QRIS → opsi QRIS TIDAK tampil', has(nq, 'id="pesanForm"') && !has(nq, 'value="prepay_qris"'));
+  const cl = (await get('/pesan', h('onlineclosed.test'))).text; ok('orders_open=false → /pesan ditutup, tanpa formulir', has(cl, 'Pesanan online sedang ditutup') && !has(cl, 'id="pesanForm"'));
+  const en = (await get('/en/pesan', h('online.test'))).text; ok('/en/pesan: teks Inggris', has(en, 'Order online') && has(en, 'Picked up by') && has(en, 'WhatsApp number'));
+  const ord = (await get('/order', h('online.test'))).text; ok('/order tanpa QR → tautan ke /pesan', has(ord, 'href="/pesan"') && has(ord, 'Atau pesan online'));
+  const ord2 = (await get('/order', h('good.test'))).text; ok('/order tanpa QR, online mati → tanpa tautan /pesan', !has(ord2, 'href="/pesan"'));
+
+  const st = await get('/pesanan/' + T7, h('online.test'));
+  ok('/pesanan/<token> 200 + kotak status + noindex + no-store', st.status === 200 && has(st.text, 'id="statusBox"') && has(st.text, 'data-token="' + T7 + '"') && has(st.text, 'name="robots" content="noindex"') && st.headers.get('cache-control') === 'no-store');
+  ok('status: QRIS & petunjuk pengambilan diteruskan ke skrip', has(st.text, 'data-qris="https://images.test/restaurant/tenants/ol/qris/qris-1.webp"') && has(st.text, 'data-pickup="Ambil di kasir depan."'));
+  ok('status: teks status & tombol "Saya sudah bayar" tersedia', has(st.text, 'Siap diambil') && has(st.text, 'Saya sudah bayar'));
+  const bad = await get('/pesanan/abc', h('online.test')); ok('/pesanan/<token tidak valid> = 404', bad.status === 404);
+  const bad2 = await get('/pesanan/' + T7 + '/x', h('online.test')); ok('/pesanan/<token>/x = 404', bad2.status === 404);
+  const nopath = await get('/pesanan', h('online.test')); ok('/pesanan tanpa token = 404', nopath.status === 404);
+  const stOff = await get('/pesanan/' + T7, h('good.test')); ok('online mati: /pesanan/<token> = 404', stOff.status === 404);
+  const enSt = (await get('/en/pesanan/' + T7, h('online.test'))).text; ok('pengalih bahasa di halaman status mempertahankan token', has(enSt, '/pesanan/' + T7) && has(enSt, 'Order status'));
+
+  const body = { lang: 'id', items: [{ id: 'd1', qty: 2 }], name: 'Budi', phone: '0812 3456 7890', note: 'jam 7', pickup_by: 'courier', pay_plan: 'at_pickup', client: 'b'.repeat(32), price: 1, total: 1, captcha: 'x' };
+  const r = await post(get, 'online.test', '/api/pesan', body); const rj = JSON.parse(r.text);
+  ok('POST /api/pesan → 200, token & total akhir dari backend', r.status === 200 && rj.token === T7 && rj.total_idr === 69300, r.text);
+  ok('payload ke backend: site, nama, WA, pickup_by, pay_plan, item; TANPA harga/total/captcha', lastOnline.site === 's5' && lastOnline.name === 'Budi' && lastOnline.phone === '0812 3456 7890' && lastOnline.pickup_by === 'courier' && lastOnline.pay_plan === 'at_pickup' && lastOnline.items[0].qty === 2 && !('price' in lastOnline) && !('total' in lastOnline) && !('captcha' in lastOnline), JSON.stringify(lastOnline));
+  await post(get, 'online.test', '/api/pesan', { ...body, pickup_by: 'hacker', pay_plan: 'free' });
+  ok('pickup_by/pay_plan liar dinormalkan (customer / at_pickup)', lastOnline.pickup_by === 'customer' && lastOnline.pay_plan === 'at_pickup');
+  const before = onlineCalls; const off409 = await post(get, 'good.test', '/api/pesan', body);
+  ok('online mati: /api/pesan = 409 E:online_off tanpa memanggil backend', off409.status === 409 && JSON.parse(off409.text).code === 'E:online_off' && onlineCalls === before, off409.text);
+  const bigBody = JSON.stringify({ pad: 'x'.repeat(30000) }); const big = await get('/api/pesan', { method: 'POST', headers: { host: 'online.test', 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(bigBody)) }, body: bigBody });
+  ok('badan terlalu besar ditolak 413', big.status === 413, String(big.status));
+  const g1 = await get('/api/pesanan?token=' + T7, h('online.test')); ok('GET /api/pesanan → status dari backend', g1.status === 200 && JSON.parse(g1.text).status === 'ready', g1.text);
+  const g2 = await get('/api/pesanan?token=' + 'd'.repeat(32), h('online.test')); ok('token asing → 404 E:invalid_order', g2.status === 404 && JSON.parse(g2.text).code === 'E:invalid_order', g2.text);
+  const g3 = await get('/api/pesanan?token=zzz', h('online.test')); ok('token bentuk salah → 404 tanpa memanggil backend', g3.status === 404);
+  const c1 = await post(get, 'online.test', '/api/pesanan', { token: T7 }); ok('POST /api/pesanan (saya sudah bayar) → 200', c1.status === 200 && JSON.parse(c1.text).ok === true, c1.text);
+  const c2 = await post(get, 'online.test', '/api/pesanan', { token: 'xyz' }); ok('klaim dengan token salah → 404', c2.status === 404);
+});
+console.log('\n[7b] Turnstile aktif (TURNSTILE_SECRET + TURNSTILE_SITEKEY)');
+await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '', TURNSTILE_SECRET: 'rahasia', TURNSTILE_SITEKEY: '1x00000000000000000000AA' }, async get => {
+  const p = (await get('/pesan', { headers: { host: 'online.test' } })).text;
+  ok('widget Turnstile dirender dengan sitekey', has(p, 'id="captcha"') && has(p, 'data-sitekey="1x00000000000000000000AA"'));
+  const before = onlineCalls;
+  const r = await post(get, 'online.test', '/api/pesan', { lang: 'id', items: [{ id: 'd1', qty: 1 }], name: 'B', phone: '0812345678' });
+  ok('tanpa token captcha → 403 E:captcha, backend tidak dipanggil', r.status === 403 && JSON.parse(r.text).code === 'E:captcha' && onlineCalls === before, r.text);
+  const r2 = await post(get, 'online.test', '/api/pesan', { lang: 'id', items: [{ id: 'd1', qty: 1 }], name: 'B', phone: '0812345678', captcha: 'salah' });
+  ok('token captcha salah (siteverify tidak terjangkau/ditolak) → 403', r2.status === 403 && onlineCalls === before, r2.text);
 });
 api.close();
 console.log(`\nHasil: ${pass} lulus, ${fail} gagal`); process.exit(fail ? 1 : 0);

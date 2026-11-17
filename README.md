@@ -28,6 +28,14 @@ Tanpa `API_URL`, frontend berjalan dalam **mode contoh**: menampilkan restoran d
 
 Deploy: Cloudflare Pages, build command `npm run build`, output `dist`. Bila muncul error `Invalid binding SESSION`, tambahkan KV binding `SESSION`.
 
+## Pesanan online (takeaway)
+
+Halaman **`/pesan`** (formulir) dan **`/pesanan/<token>`** (status, memuat ulang tiap 8 detik) tampil hanya bila Owner mengaktifkan pesanan online di admin (`site.online.enabled`). Penerus API: `/api/pesan`, `/api/pesanan`. Kontrak: `API-CONTRACT.md` (v1.4).
+
+Variabel opsional untuk **Cloudflare Turnstile** (anti-bot di formulir): `TURNSTILE_SITEKEY` (publik) dan `TURNSTILE_SECRET` (rahasia, jangan di `wrangler.jsonc`; isi lewat dashboard/`wrangler secret put`). Tanpa keduanya Turnstile dilewati. Ini hanya lapisan tambahan: batas sebenarnya ada di database (kunci anon Supabase bersifat publik). **Belum diverifikasi:** Turnstile pada domain milik pelanggan (hostname-nya mungkin harus didaftarkan di widget).
+
+Tes: `npm run test:e2e` (SSR + API tiruan) dan `npm run test:ui` (DOM skrip klien di jsdom).
+
 ## Struktur
 
 ```

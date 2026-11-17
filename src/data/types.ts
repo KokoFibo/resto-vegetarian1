@@ -47,6 +47,7 @@ export type Site = {
   primary_color: string | null;         // usang; abaikan
   theme: Theme | null;                  // null = tampilan bawaan
   menu_display?: 'photo' | 'text';      // pilihan Owner: 'text' = daftar teks tanpa foto (default 'photo'; backend lama boleh tanpa field ini)
+  online?: SiteOnline;                  // pesanan online (takeaway); backend lama tanpa field ini = mati
   orders_open: boolean;                 // false = "Tutup sementara" / banner Libur yang menutup pemesanan
   hero: Hero;
   banners: Banner[];                    // sudah disaring tanggal & zona waktu oleh backend; maks 3
@@ -88,3 +89,15 @@ export type OrderRequest = {
 export type OrderResult = { order_no: number | string; table_label: string; total_idr: number; my_total_idr?: number };
 export type BillRequestResult = { table_label: string; my_total_idr: number; has_fees: boolean };
 export type OrderError = { code: string };
+
+/** Pesanan online (v1.4). */
+export type SiteOnline = { enabled: boolean; prepay: boolean; qris_url: string | null; pickup_note: string | null };
+export type OnlineOrderRequest = { lang: string; items: { id: string; qty: number }[]; name: string; phone: string; pickup_by: 'customer' | 'courier'; pay_plan: 'at_pickup' | 'prepay_qris'; note: string; client?: string; captcha?: string };
+export type Figures = { subtotal: number; service?: number; tax?: number; discount?: number; total: number; service_pct?: number; tax_pct?: number };
+export type OnlineOrderResult = { order_no: string; token: string; status: 'pending'; pickup_by: 'customer' | 'courier'; pay_plan: 'at_pickup' | 'prepay_qris'; figures: Figures; total_idr: number };
+export type OnlineStatusName = 'pending' | 'new' | 'preparing' | 'ready' | 'done' | 'cancelled' | 'rejected' | 'expired';
+export type OnlineOrderStatus = {
+  order_no: string; status: OnlineStatusName; name: string | null; pickup_by: 'customer' | 'courier'; pay_plan: 'at_pickup' | 'prepay_qris';
+  pay_claimed: boolean; paid: boolean; reject_reason: string | null; created_at: string; note: string | null;
+  figures: Figures; items: { name: string; qty: number; line_total: number }[];
+};
