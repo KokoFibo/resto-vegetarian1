@@ -1,4 +1,4 @@
-# Kontrak API frontend ↔ backend (v1.4)
+# Kontrak API frontend ↔ backend (v1.5)
 
 > v1.1 hanya **menambah** field (tema, hero, banner, `orders_open`, `featured`) dan kode galat `E:closed`; semua field v1 tetap. Daftar perubahan: [`CHANGELOG-KONTRAK.md`](./CHANGELOG-KONTRAK.md).
 
@@ -194,3 +194,11 @@ Pelanggan memesan lewat `/pesan` tanpa QR meja. Pesanan **menunggu konfirmasi st
 ### Frontend
 
 `/pesan`, `/pesanan/<token>`, penerus `/api/pesan` (memeriksa Turnstile bila `TURNSTILE_SECRET` diisi) dan `/api/pesanan` (GET status, POST klaim bayar). Total pelanggan = `figures.total` (sudah termasuk pajak dan biaya layanan), ditampilkan dalam rupiah eksak.
+
+
+## QR Kasir (take away) dan istilah (v1.5)
+
+- `GET /v1/table?site=&token=` → `{ "label": "Take away", "kind": "counter" }` (atau `"kind": "table"`).
+- `POST /v1/orders` ke token `counter`: `name` **wajib** (`400 { "code": "E:name_required" }`), tiap pesanan = tagihan sendiri, respons memuat `"kind": "counter"`. `POST /v1/bill` (minta bill) → `E:no_bill`.
+- `site.labels`: `{ "takeaway": { "id": "Bungkus" }, "send_order": { "id": "Pesan sekarang", "en": "Send now" } }`. Kunci: `takeaway`, `online_link`, `send_order`, `i_paid`. Frontend memakai istilah bahasa halaman bila ada, selain itu teks bawaan bahasa itu.
+- Navigasi utama tidak memuat `/pesan`; `/pesan` dan `/pesanan/<token>` memakai header tanpa Beranda dan Order.

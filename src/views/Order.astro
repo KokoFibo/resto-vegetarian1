@@ -2,7 +2,7 @@
 import PageHead from '../components/PageHead.astro';
 import DishTags from '../components/DishTags.astro';
 import Utensils from '../components/Utensils.astro';
-import { href, loc, pick } from '../i18n';
+import { href, loc, lbl, pick } from '../i18n';
 import { ui } from '../i18n/ui';
 import { idr } from '../lib/format';
 import type { ViewProps } from './types';
@@ -11,11 +11,13 @@ const primary = site.languages[0];
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 const errors = Object.fromEntries(Object.entries(ui.errors).map(([code, t]) => [code, pick(t, lang)]));
 const closed = site.orders_open === false;
+const counter = table?.kind === 'counter';   // QR kasir (take away): nama wajib, tagihan sendiri, tanpa minta bill
+const tname = lbl(site, lang, 'takeaway', L(ui.online.takeaway));
 const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.cat === c.slug) })).filter(g => g.dishes.length);
 ---
 <PageHead title={L(ui.order.title)}>
   {closed ? L(ui.order.closedBody) : table
-    ? <span>{L(ui.order.table)}: <b class="jade">{table.label}</b> · {L(ui.order.payAtCashier)}</span>
+    ? counter ? <span><b class="jade">{tname}</b> · {L(ui.order.payAtCashier)}</span> : <span>{L(ui.order.table)}: <b class="jade">{table.label}</b> · {L(ui.order.payAtCashier)}</span>
     : L(ui.order.scanHint)}
 </PageHead>
 {closed ? (
@@ -29,17 +31,17 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
     <span class="jade"><Utensils size={44} /></span>
     <h3>{L(ui.order.scanTitle)}</h3><p>{L(ui.order.scanBody)}</p>
     <p><a class="btn" href={href(site, lang, 'menu')}>{L(ui.viewMenu)}</a></p>
-    {site.online?.enabled && <p><a class="btn vm" href={href(site, lang, 'pesan')}>{L(ui.online.or)}</a></p>}
+    {site.online?.enabled && <p><a class="btn vm" href={href(site, lang, 'pesan')}>{lbl(site, lang, 'online_link', L(ui.online.or))}</a></p>}
   </div></div></section>
 ) : (
   <section class="after-head"><div class="wrap">
     <div id="orderDone" class="panel scanbox" hidden>
       <span class="jade">✔</span><h3 id="doneTitle"></h3>
       <p>{L(ui.order.number)}</p><p class="price huge" id="doneNo"></p><p id="doneInfo"></p>
-      <p>{L(ui.order.waitAtTable)}</p>
+      <p>{L(counter ? ui.order.counterDone : ui.order.waitAtTable)}</p>
       <p><button type="button" class="btn ghost" id="again">{L(ui.order.again)}</button></p>
     </div>
-    <form id="orderForm" class="ordergrid" data-token={token} data-lang={lang}
+    <form id="orderForm" class="ordergrid" data-token={token} data-lang={lang} data-counter={counter ? '1' : undefined} data-tlabel={counter ? tname : undefined}
           data-errs={JSON.stringify(errors)} data-empty={L(ui.order.nothing)} data-ok={L(ui.order.received)}
           data-billok={L(ui.order.billAsked)} data-mytotal={L(ui.order.myTotal)} data-fees={L(ui.order.feesNote)}>
       <div>
@@ -63,18 +65,18 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
         ))}
       </div>
       <aside class="panel sum rv" style="--d:.15s">
-        <h3>{L(ui.order.yourOrder)} · {table.label}</h3>
+        <h3>{L(ui.order.yourOrder)} · {counter ? tname : table.label}</h3>
         <ul id="lines"></ul>
         <div class="row"><b>{L(ui.order.total)}</b><b id="total" class="price">IDR 0k</b></div>
-        <label>{L(ui.order.name)}<input name="name" maxlength="60" autocomplete="name" /></label>
+        <label>{counter ? L(ui.order.nameRequired) : L(ui.order.name)}<input name="name" maxlength="60" autocomplete="name" required={counter} /></label>
         <label>{L(ui.order.note)}<input name="note" maxlength="200" /></label>
         <p id="orderErr" class="err" role="alert"></p>
         <button class="btn vm" type="submit" id="orderBtn">{L(ui.order.send)}</button>
       </aside>
     </form>
-    <div class="panel scanbox" style="margin-top:1.5rem">
+    {!counter && <div class="panel scanbox" style="margin-top:1.5rem">
       <p><button type="button" class="btn" id="billBtn">{L(ui.order.askBill)}</button></p>
       <p id="billMsg" class="muted" role="status"></p>
-    </div>
+    </div>}
   </div></section>
 )}

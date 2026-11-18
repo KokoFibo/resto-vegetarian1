@@ -6,6 +6,9 @@ import { navRoutesFor } from '../routes';
 import LangSwitch from './LangSwitch.astro';
 interface Props { site: Site; lang: string; slug: string; brand: string; tagline: string | null }
 const { site, lang, slug, brand, tagline } = Astro.props;
+// Halaman pesan online (/pesan, /pesanan/<token>): tanpa tautan Beranda dan Order. Logo/nama restoran, Menu, Kontak, dan bahasa tetap ada.
+const focused = slug === 'pesan' || slug.startsWith('pesanan');
+const links = navRoutesFor(site).filter(r => !(focused && (r.key === 'home' || r.key === 'order')));
 ---
 <header id="site-header"><div class="wrap">
   <a class="brand" href={href(site, lang)}>
@@ -13,8 +16,8 @@ const { site, lang, slug, brand, tagline } = Astro.props;
     <span><b>{brand}</b>{tagline && <small>{tagline}</small>}</span>
   </a>
   <nav id="nav" aria-label={pick(ui.menuLabel, lang)}>
-    {navRoutesFor(site).map(r => (
-      <a href={href(site, lang, r.slug)} class={(r.slug === slug ? 'on' : '') + (r.key === 'order' ? ' ordn' : '') + (r.key === 'pesan' ? ' ordn' : '')}
+    {links.map(r => (
+      <a href={href(site, lang, r.slug)} class={(r.slug === slug ? 'on' : '') + (r.key === 'order' ? ' ordn' : '')}
          aria-current={r.slug === slug ? 'page' : undefined} data-meja={r.key === 'order' ? '' : undefined}>{pick(r.label, lang)}</a>
     ))}
   </nav>

@@ -58,6 +58,18 @@ function normalizeOnline(raw: unknown): SiteOnline {
   return { enabled, prepay: enabled && r.prepay === true && !!qris, qris_url: qris, pickup_note: typeof r.pickup_note === 'string' && r.pickup_note.trim() ? r.pickup_note.trim().slice(0, 300) : null };
 }
 
+/** Istilah dari Owner: hanya kunci dikenal, teks string tidak kosong dipotong 40. Selain itu dibuang (backend lama = tanpa field ini). */
+const LABEL_KEYS = ['takeaway', 'online_link', 'send_order', 'i_paid'];
+function normalizeLabels(raw: unknown): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const k of LABEL_KEYS) {
+    const m = (raw as Record<string, unknown>)[k]; if (!m || typeof m !== 'object') continue;
+    for (const [lang, v] of Object.entries(m as Record<string, unknown>)) if (/^[a-z]{2}$/.test(lang) && typeof v === 'string' && v.trim()) (out[k] ??= {})[lang] = v.trim().slice(0, 40);
+  }
+  return out;
+}
+
 function normalizeSite(site: Site): Site {
   if (!Array.isArray(site.languages) || !site.languages.length) site.languages = ['id'];
   site.theme = cleanTheme(site.theme);
@@ -66,6 +78,7 @@ function normalizeSite(site: Site): Site {
   site.hero = normalizeHero(site.hero);
   site.banners = normalizeBanners(site.banners);
   site.online = normalizeOnline(site.online);
+  site.labels = normalizeLabels(site.labels);
   return site;
 }
 
@@ -100,7 +113,8 @@ export async function getMenu(locals: unknown, site: Site): Promise<Menu> {
 export async function getTable(locals: unknown, site: Site, token: string): Promise<Table | null> {
   const base = baseUrl(locals);
   if (!base || isDemo(site) || !TOKEN.test(token)) return null;
-  return get<Table>(base, 'table', { site: site.id, token });
+  const t = await get<Table>(base, 'table', { site: site.id, token });
+  return t ? { label: t.label, kind: t.kind === 'counter' ? 'counter' : 'table' } : null;
 }
 
 /** Meneruskan pesanan ke backend. Harga tidak pernah dikirim: backend menghitungnya sendiri. */

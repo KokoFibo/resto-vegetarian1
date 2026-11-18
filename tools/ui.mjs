@@ -8,7 +8,8 @@ let pass = 0, fail = 0; const ok = (n, c, x = '') => { c ? pass++ : fail++; cons
 const T = 'c'.repeat(32);
 const site = { id: 's5', slug: 'ol', status: 'active', restaurant_type: 'vegan', languages: ['id', 'en'], translations: { id: { brand_name: 'Warung Online', tagline: null }, en: { brand_name: 'Online Eatery', tagline: null } },
   phone: null, whatsapp: null, email: null, maps_url: null, address: null, opening_hours: null, primary_color: null, theme: null, orders_open: true, hero: { texts: {}, image: null }, banners: [],
-  online: { enabled: true, prepay: true, qris_url: 'https://images.test/qris-1.webp', pickup_note: 'Ambil di kasir depan.' } };
+  online: { enabled: true, prepay: true, qris_url: 'https://images.test/qris-1.webp', pickup_note: 'Ambil di kasir depan.' },
+  labels: { takeaway: { id: 'Bungkus' }, send_order: { id: 'Pesan sekarang' }, i_paid: { id: 'Sudah transfer' } } };
 const menu = { cats: [{ slug: 'main', glyph: '', name: { id: 'Utama' } }], dishes: [
   { id: 'd1', cat: 'main', price: 30000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi A' }, short: { id: 'x' }, detail: {}, badge: null },
   { id: 'd2', cat: 'main', price: 20000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'x' }, detail: {}, badge: null }] };
@@ -17,13 +18,14 @@ const api = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x'); res.setHeader('content-type', 'application/json');
   if (u.pathname === '/v1/site') return res.end(JSON.stringify(site));
   if (u.pathname === '/v1/menu') return res.end(JSON.stringify(menu));
+  if (u.pathname === '/v1/table') return res.end(JSON.stringify((u.searchParams.get('token') || '').startsWith('e') ? { label: 'Take away', kind: 'counter' } : { label: 'Meja 1', kind: 'table' }));
   res.statusCode = 404; res.end('{}');
 }).listen(4610);
 const child = spawn('node', ['.test-dist/server/entry.mjs'], { cwd: ROOT, env: { PATH: process.env.PATH, HOST: '127.0.0.1', PORT: '4811', API_URL: 'http://127.0.0.1:4610', MEDIA_URL: '' }, stdio: 'ignore' });
 for (let i = 0; i < 50; i++) { try { await fetch('http://127.0.0.1:4811/', { method: 'HEAD' }); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
 const page = async path => (await fetch('http://127.0.0.1:4811' + path, { headers: { host: 'online.test' } })).text();
 const bundle = async file => (await build({ entryPoints: [file], bundle: true, write: false, format: 'iife', target: 'es2020' })).outputFiles[0].text;
-const [pesanJs, pesananJs] = [await bundle('src/scripts/pesan.ts'), await bundle('src/scripts/pesanan.ts')];
+const [pesanJs, pesananJs, orderJs] = [await bundle('src/scripts/pesan.ts'), await bundle('src/scripts/pesanan.ts'), await bundle('src/scripts/order.ts')];
 
 async function boot(html, url, js, fetchImpl) {
   const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true });
@@ -94,7 +96,7 @@ const show = async (key, extra = {}) => {
 };
 {
   let b = await show('pending_prepay'); let t = b.d.querySelector('#statusBox').textContent;
-  ok('pending+QRIS: nomor, status menunggu, gambar QRIS, total akhir, tombol "Saya sudah bayar"', t.includes('#0007') && t.includes('Menunggu konfirmasi') && b.d.querySelector('img.qrisimg')?.src === 'https://images.test/qris-1.webp' && t.includes('Rp 69.300') && !!b.d.querySelector('.qrisbox button'), t.slice(0, 300));
+  ok('pending+QRIS: nomor, status menunggu, gambar QRIS, total akhir, tombol bayar (istilah Owner "Sudah transfer")', t.includes('#0007') && b.d.querySelector('.qrisbox button')?.textContent === 'Sudah transfer' && t.includes('Menunggu konfirmasi') && b.d.querySelector('img.qrisimg')?.src === 'https://images.test/qris-1.webp' && t.includes('Rp 69.300') && !!b.d.querySelector('.qrisbox button'), t.slice(0, 300));
   ok('rincian eksak: Rp 60.000 + layanan Rp 3.000 + pajak Rp 6.300', t.includes('Rp 60.000') && t.includes('Rp 3.000') && t.includes('Rp 6.300') && !t.includes('IDR') && t.includes('Biaya layanan') && t.includes('Pajak') && t.includes('Kurir') && t.includes('Budi') && t.includes('2 × Nasi A'));
   ok('petunjuk pengambilan Owner tampil', t.includes('Ambil di kasir depan.'));
   ok('tidak ada nomor WA di halaman', !/\+?62\d{8,}|0812/.test(t));
@@ -120,6 +122,25 @@ console.log('\n[U5] token tidak dikenal & gangguan sementara');
   ok('404 → "Pesanan tidak ditemukan"', b.d.querySelector('#statusBox').textContent.includes('Pesanan tidak ditemukan'));
   b = await boot(html, 'http://online.test/pesanan/' + T, pesananJs, async () => ({ ok: false, status: 503, json: async () => ({ code: 'E:unavailable' }) })); await tick();
   ok('503 → tampilan sementara dipertahankan ("Memuat…"), tidak menampilkan galat menakutkan', b.d.querySelector('#statusBox').textContent.includes('Memuat') && !b.d.querySelector('.err'));
+}
+console.log('\n[U6] QR kasir (take away): nama wajib, tanpa minta bill');
+{
+  const CT = 'e'.repeat(32), calls = [];
+  const html = await page('/order?meja=' + CT);
+  const f = async (u, init) => { calls.push({ u, body: JSON.parse(init.body) }); return { ok: true, status: 200, json: async () => ({ order_no: '0009', table_label: 'Take away', total_idr: 30000, kind: 'counter' }) }; };
+  const { w, d } = await boot(html, 'http://online.test/order?meja=' + CT, orderJs, f);
+  ok('judul memakai istilah Owner "Bungkus"; tanpa tombol minta bill', d.body.textContent.includes('Bungkus') && !d.querySelector('#billBtn'));
+  d.querySelector('.oi[data-id="d1"] button[data-d="+"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  const submit = async () => { d.querySelector('#orderForm').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await tick(); };
+  await submit(); ok('tanpa nama → galat E:name_required, tidak mengirim', d.querySelector('#orderErr').textContent.includes('Nama wajib') && calls.length === 0, d.querySelector('#orderErr').textContent);
+  d.querySelector('[name=name]').value = 'Budi'; await submit();
+  ok('dengan nama → mengirim ke /api/orders', calls.length === 1 && calls[0].u === '/api/orders' && calls[0].body.name === 'Budi' && calls[0].body.token === CT);
+  ok('layar sukses: nomor pesanan, "Bungkus" (bukan label meja), petunjuk ke kasir', d.querySelector('#doneNo').textContent === '#0009' && d.querySelector('#doneInfo').textContent.startsWith('Bungkus') && d.querySelector('#orderDone').textContent.includes('Tunjukkan nomor pesanan') && !d.querySelector('#orderDone').hidden);
+  const html2 = await page('/order?meja=' + 'a'.repeat(32)); calls.length = 0;
+  const m = await boot(html2, 'http://online.test/order?meja=' + 'a'.repeat(32), orderJs, f);
+  m.d.querySelector('.oi[data-id="d1"] button[data-d="+"]').dispatchEvent(new m.w.MouseEvent('click', { bubbles: true }));
+  m.d.querySelector('#orderForm').dispatchEvent(new m.w.Event('submit', { bubbles: true, cancelable: true })); await tick();
+  ok('meja biasa: nama tetap opsional (mengirim tanpa nama)', calls.length === 1 && calls[0].body.name === '' && !!m.d.querySelector('#billBtn'));
 }
 child.kill(); api.close();
 console.log(`\nHasil UI: ${pass} lulus, ${fail} gagal`); process.exit(fail ? 1 : 0);

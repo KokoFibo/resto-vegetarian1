@@ -47,6 +47,7 @@ export type Site = {
   primary_color: string | null;         // usang; abaikan
   theme: Theme | null;                  // null = tampilan bawaan
   menu_display?: 'photo' | 'text';      // pilihan Owner: 'text' = daftar teks tanpa foto (default 'photo'; backend lama boleh tanpa field ini)
+  labels?: Record<string, Record<string, string>>;   // istilah yang diubah Owner: { kunci: { bahasa: teks } }; kosong = teks bawaan
   online?: SiteOnline;                  // pesanan online (takeaway); backend lama tanpa field ini = mati
   orders_open: boolean;                 // false = "Tutup sementara" / banner Libur yang menutup pemesanan
   hero: Hero;
@@ -74,7 +75,8 @@ export type Dish = {
 
 export type Menu = { cats: Category[]; dishes: Dish[] };
 
-export type Table = { label: string };
+/** kind = "counter": QR kasir (take away): nama wajib, tiap pesanan tagihan sendiri, tanpa "Minta bill". */
+export type Table = { label: string; kind: 'table' | 'counter' };
 
 export type OrderRequest = {
   token: string;
@@ -86,7 +88,7 @@ export type OrderRequest = {
   client?: string;
 };
 
-export type OrderResult = { order_no: number | string; table_label: string; total_idr: number; my_total_idr?: number };
+export type OrderResult = { order_no: number | string; table_label: string; total_idr: number; my_total_idr?: number; kind?: 'table' | 'counter' };
 export type BillRequestResult = { table_label: string; my_total_idr: number; has_fees: boolean };
 export type OrderError = { code: string };
 

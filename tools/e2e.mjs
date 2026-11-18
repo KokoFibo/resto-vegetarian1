@@ -42,7 +42,7 @@ const SITES = {
   'old.test': { id: 's3', slug: 'old', status: 'active', restaurant_type: 'vegetarian', languages: ['id'], translations: { id: { brand_name: 'Backend Lama', tagline: 'x' } }, phone: null, whatsapp: null, email: null, maps_url: null, address: null, opening_hours: null, primary_color: null },
 };
 const ONLINE = { enabled: true, prepay: true, qris_url: 'https://images.test/restaurant/tenants/ol/qris/qris-1.webp', pickup_note: 'Ambil di kasir depan.' };
-SITES['online.test'] = { ...SITES['good.test'], id: 's5', slug: 'ol', languages: ['id', 'en'], translations: { id: { brand_name: 'Warung Online', tagline: null }, en: { brand_name: 'Online Eatery', tagline: null } }, online: ONLINE };
+SITES['online.test'] = { ...SITES['good.test'], id: 's5', slug: 'ol', languages: ['id', 'en'], translations: { id: { brand_name: 'Warung Online', tagline: null }, en: { brand_name: 'Online Eatery', tagline: null } }, online: ONLINE, labels: { takeaway: { id: 'Bungkus' }, online_link: { id: 'Pesan dari sini' }, send_order: { id: 'Pesan sekarang' }, i_paid: { id: 'Sudah transfer' }, bogus: { id: 'x' } } };
 SITES['onlinenoqr.test'] = { ...SITES['good.test'], id: 's6', slug: 'olnq', online: { enabled: true, prepay: true, qris_url: null, pickup_note: null } };   // prepay tanpa gambar QRIS harus dianggap mati
 SITES['onlineclosed.test'] = { ...SITES['good.test'], id: 's7', slug: 'olc', orders_open: false, online: ONLINE };
 SITES['onlinejunk.test'] = { ...SITES['good.test'], id: 's8', slug: 'olj', online: { enabled: 'yes', prepay: 1, qris_url: 'javascript:alert(1)', pickup_note: 5 } };
@@ -58,7 +58,7 @@ const api = http.createServer((req, res) => {
   if (u.pathname === '/v1/online-claim' && req.method === 'POST') return res.end(JSON.stringify({ ok: true }));
   if (u.pathname === '/v1/site') { const s = SITES[u.searchParams.get('host')]; res.statusCode = s ? 200 : 404; return res.end(JSON.stringify(s || { error: 'nf' })); }
   if (u.pathname === '/v1/menu') return res.end(JSON.stringify(MENU));
-  if (u.pathname === '/v1/table') return res.end(JSON.stringify({ label: 'Meja 1' }));
+  if (u.pathname === '/v1/table') return res.end(JSON.stringify((u.searchParams.get('token') || '').startsWith('e') ? { label: 'Take away', kind: 'counter' } : { label: 'Meja 1' }));
   if (u.pathname === '/v1/orders') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:closed' })); }
   if (u.pathname === '/v1/bill-request') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:no_bill' })); }
   res.statusCode = 404; res.end('{}');
@@ -192,7 +192,9 @@ const T7 = 'c'.repeat(32);
 await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get => {
   const h = host => ({ headers: { host } });
   const home = (await get('/', h('online.test'))).text;
-  ok('online aktif: nav memuat "Pesan online" → /pesan', has(home, 'href="/pesan"') && has(home, 'Pesan online'));
+  const navOf = html => (html.match(/<nav id="nav"[^>]*>([\s\S]*?)<\/nav>/) || [])[1] || '';
+  ok('online aktif: navigasi utama TIDAK memuat "Pesan online"', !has(navOf(home), '/pesan') && !has(navOf(home), 'Pesan online'));
+  ok('navigasi utama tetap Beranda, Menu, Order, Kontak', has(navOf(home), 'href="/"') && has(navOf(home), 'href="/menu"') && has(navOf(home), 'href="/order"') && has(navOf(home), 'href="/kontak"'));
   ok('halaman status tidak masuk navigasi', !has(home, 'href="/pesanan"'));
   const off = (await get('/', h('good.test'))).text;
   ok('online mati/tanpa field (good.test): tanpa tautan /pesan', !has(off, '/pesan'));
@@ -210,13 +212,28 @@ await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get 
   const nq = (await get('/pesan', h('onlinenoqr.test'))).text; ok('prepay tanpa gambar QRIS → opsi QRIS TIDAK tampil', has(nq, 'id="pesanForm"') && !has(nq, 'value="prepay_qris"'));
   const cl = (await get('/pesan', h('onlineclosed.test'))).text; ok('orders_open=false → /pesan ditutup, tanpa formulir', has(cl, 'Pesanan online sedang ditutup') && !has(cl, 'id="pesanForm"'));
   const en = (await get('/en/pesan', h('online.test'))).text; ok('/en/pesan: teks Inggris', has(en, 'Order online') && has(en, 'Picked up by') && has(en, 'WhatsApp number'));
-  const ord = (await get('/order', h('online.test'))).text; ok('/order tanpa QR → tautan ke /pesan', has(ord, 'href="/pesan"') && has(ord, 'Atau pesan online'));
+  const ord = (await get('/order', h('online.test'))).text;
+  ok('/order tanpa QR → tautan ke /pesan tetap ada (pelanggan makan di tempat bisa pesan bawa pulang)', has(ord, 'href="/pesan"'));
+  ok('tautan itu memakai istilah Owner ("Pesan dari sini")', has(ord, 'Pesan dari sini') && !has(ord, 'Atau pesan online'));
   const ord2 = (await get('/order', h('good.test'))).text; ok('/order tanpa QR, online mati → tanpa tautan /pesan', !has(ord2, 'href="/pesan"'));
+
+  const ctr = await get('/order?meja=' + 'e'.repeat(32), h('online.test'));
+  ok('QR kasir: halaman Order tampil dengan istilah Owner "Bungkus"', ctr.status === 200 && has(ctr.text, 'Bungkus') && has(ctr.text, 'data-counter="1"'));
+  ok('QR kasir: nama WAJIB (required)', /name="name"[^>]*required/.test(ctr.text));
+  ok('QR kasir: tanpa tombol "Minta bill"', !has(ctr.text, 'id="billBtn"'));
+  ok('QR kasir: petunjuk tunjukkan nomor pesanan di kasir', has(ctr.text, 'Tunjukkan nomor pesanan'));
+  const mej = await get('/order?meja=' + 'a'.repeat(32), h('online.test'));
+  ok('meja biasa: nama opsional, ada "Minta bill", bukan counter', !/name="name"[^>]*required/.test(mej.text) && has(mej.text, 'id="billBtn"') && !has(mej.text, 'data-counter'));
+  const ctrEn = (await get('/en/order?meja=' + 'e'.repeat(32), h('online.test'))).text;
+  ok('QR kasir bahasa Inggris: bawaan "Take away", bukan "Bungkus"', has(ctrEn, 'Take away') && !has(ctrEn, 'Bungkus'));
+  const ctrDef = (await get('/order?meja=' + 'e'.repeat(32), h('good.test'))).text;
+  ok('tanpa istilah Owner: "Take away" bawaan', has(ctrDef, 'Take away') && !has(ctrDef, 'Bungkus'));
 
   const st = await get('/pesanan/' + T7, h('online.test'));
   ok('/pesanan/<token> 200 + kotak status + noindex + no-store', st.status === 200 && has(st.text, 'id="statusBox"') && has(st.text, 'data-token="' + T7 + '"') && has(st.text, 'name="robots" content="noindex"') && st.headers.get('cache-control') === 'no-store');
   ok('status: QRIS & petunjuk pengambilan diteruskan ke skrip', has(st.text, 'data-qris="https://images.test/restaurant/tenants/ol/qris/qris-1.webp"') && has(st.text, 'data-pickup="Ambil di kasir depan."'));
-  ok('status: teks status & tombol "Saya sudah bayar" tersedia', has(st.text, 'Siap diambil') && has(st.text, 'Saya sudah bayar'));
+  ok('status: teks status, tombol & petunjuk memakai istilah Owner "Sudah transfer" (bukan "Saya sudah bayar")', has(st.text, 'Siap diambil') && has(st.text, 'Sudah transfer') && !has(st.text, 'Saya sudah bayar'));
+  ok('status: header tanpa Beranda & Order', !has(navOf(st.text), 'href="/"') && !has(navOf(st.text), 'href="/order"') && has(navOf(st.text), 'href="/menu"'));
   const bad = await get('/pesanan/abc', h('online.test')); ok('/pesanan/<token tidak valid> = 404', bad.status === 404);
   const bad2 = await get('/pesanan/' + T7 + '/x', h('online.test')); ok('/pesanan/<token>/x = 404', bad2.status === 404);
   const nopath = await get('/pesanan', h('online.test')); ok('/pesanan tanpa token = 404', nopath.status === 404);

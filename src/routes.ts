@@ -17,5 +17,5 @@ export type RouteKey = (typeof ROUTES)[number]['key'];
 
 /** Halaman yang ada untuk restoran ini: Filosofi hanya bila restoran punya kontennya (lihat content/index.ts). */
 export const routesFor = (site: Site) => ROUTES.filter(r => (r.key !== 'philosophy' || contentFor(site).philosophy) && (!['pesan', 'pesanan'].includes(r.key) || site.online?.enabled));
-/** Rute yang tampil di navigasi (tanpa halaman status pesanan). */
-export const navRoutesFor = (site: Site) => routesFor(site).filter(r => r.key !== 'pesanan');
+/** Rute di navigasi utama. /pesan dan /pesanan/<token> TIDAK tampil: halaman itu dibuka lewat tautan yang dibagikan restoran atau dari halaman Order. */
+export const navRoutesFor = (site: Site) => routesFor(site).filter(r => r.key !== 'pesanan' && r.key !== 'pesan');

@@ -2,7 +2,7 @@
 import PageHead from '../components/PageHead.astro';
 import DishTags from '../components/DishTags.astro';
 import Utensils from '../components/Utensils.astro';
-import { href, loc, pick } from '../i18n';
+import { href, loc, lbl, pick } from '../i18n';
 import { ui } from '../i18n/ui';
 import { rupiah } from '../lib/format';
 import { env } from '../lib/env';
@@ -66,7 +66,7 @@ const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.c
         <label>{L(ui.online.note)}<input name="note" maxlength="200" /></label>
         {sitekey && <div id="captcha" class="captcha"></div>}
         <p id="orderErr" class="err" role="alert"></p>
-        <button class="btn vm" type="submit" id="orderBtn">{L(ui.online.send)}</button>
+        <button class="btn vm" type="submit" id="orderBtn">{lbl(site, lang, 'send_order', L(ui.online.send))}</button>
       </aside>
     </form>
   </div></section>

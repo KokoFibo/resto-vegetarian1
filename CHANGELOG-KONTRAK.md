@@ -1,4 +1,12 @@
-# Perubahan kontrak API (v1 → v1.1 → v1.2 → v1.3 → v1.4)
+# Perubahan kontrak API (v1 → v1.1 → v1.2 → v1.3 → v1.4 → v1.5)
+
+## v1.5 — QR Kasir (take away), istilah yang bisa diubah Owner (hanya tambahan)
+
+- `GET /v1/table` → `{ label, kind: "table" | "counter" }`. Frontend lama yang mengabaikan `kind` tetap jalan (QR kasir tampil seperti meja biasa, tetapi tanpa batas nama wajib). Backend lama tanpa `kind` = `"table"`.
+- **QR Kasir** (`kind = "counter"`): satu per restoran. Pelanggan memindai di kasir; **nama wajib** (`POST /v1/orders` → `E:name_required` 400 bila kosong), tiap pesanan menjadi **tagihan sendiri** ("Take away #nomor · Nama"), tanpa batas 15 pelanggan/meja, batas 10 dtk/perangkat tetap. `POST /v1/orders` kini juga mengembalikan `kind`. "Minta bill" untuk QR kasir menjawab `E:no_bill`; frontend menyembunyikan tombolnya.
+- `GET /v1/site` → field baru **`labels`**: `{ takeaway?, online_link?, send_order?, i_paid? }`, masing-masing `{ <bahasa>: teks }` (maks 40 karakter). Kosong/tidak ada = teks bawaan. Bahasa tanpa istilah sendiri memakai teks bawaan bahasa itu, **bukan** istilah bahasa lain.
+- Perubahan tampilan frontend: tautan "Pesan online" **tidak lagi** di navigasi utama (tetap ada di halaman Order tanpa QR). Di `/pesan` dan `/pesanan/<token>` header tidak memuat Beranda dan Order.
+- Pesanan oleh staf (admin) tidak memakai API publik.
 
 ## v1.4 — Pesanan online / takeaway (hanya tambahan)
 

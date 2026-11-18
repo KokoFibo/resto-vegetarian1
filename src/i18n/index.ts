@@ -19,3 +19,6 @@ export function loc(m: Localized | null | undefined, lang: string, primary: stri
 /** Alamat halaman: bahasa utama tanpa awalan (/menu), bahasa kedua berawalan (/zh/menu). */
 export const href = (site: Site, lang: string, slug = ''): string =>
   (lang === site.languages[0] ? '/' : `/${lang}/`) + slug;
+
+/** Istilah yang bisa diubah Owner di admin (per bahasa). Bahasa tanpa istilah sendiri memakai teks bawaan bahasa itu (bukan istilah bahasa lain). */
+export const lbl = (site: Site, lang: string, key: string, fallback: string): string => site.labels?.[key]?.[lang]?.trim() || fallback;

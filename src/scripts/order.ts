@@ -22,7 +22,7 @@ function init() {
   const lines = q('#lines'), total = q('#total'), err = q('#orderErr'), btn = q<HTMLButtonElement>('#orderBtn'), done = q('#orderDone');
   const errs: Record<string, string> = JSON.parse(form.dataset.errs || '{}');
   const qty = new Map<string, number>();
-  const client = clientId();
+  const client = clientId(), counter = form.dataset.counter === '1';   // QR kasir: nama wajib
 
   const render = () => {
     let sum = 0;
@@ -57,6 +57,7 @@ function init() {
     err.textContent = '';
     const items = [...qty].filter(([, n]) => n > 0).map(([id, n]) => ({ id, qty: n }));
     if (!items.length) { err.textContent = errs['E:empty']; return; }
+    if (counter && !form.querySelector<HTMLInputElement>('[name=name]')!.value.trim()) { err.textContent = errs['E:name_required']; return; }
     btn.disabled = true;
     try {
       const res = await fetch('/api/orders', {
@@ -71,7 +72,7 @@ function init() {
       if (!res.ok) { err.textContent = errs[d.code] || errs['E:unavailable']; return; }
       q('#doneTitle').textContent = form.dataset.ok || '';
       q('#doneNo').textContent = '#' + d.order_no;
-      q('#doneInfo').textContent = `${d.table_label} · ${idr(d.total_idr)}`;
+      q('#doneInfo').textContent = `${counter ? form.dataset.tlabel : d.table_label} · ${idr(d.total_idr)}`;
       form.hidden = true; done.hidden = false;
       qty.clear(); render();
       scrollTo({ top: 0, behavior: 'smooth' });
