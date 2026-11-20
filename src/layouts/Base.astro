@@ -8,17 +8,19 @@ import { HTML_LANG, href, pick } from '../i18n';
 import { ui } from '../i18n/ui';
 import { brandOf } from '../lib/brand';
 import { themeCss } from '../lib/theme';
+import { baseMode, modeCss } from '../lib/mode';
 import Banners, { visibleBanners } from '../components/Banners.astro';
 interface Props { site: Site; lang: string; slug: string; routeKey?: string; noindex?: boolean }
 const { site, lang, slug, routeKey, noindex = false } = Astro.props;
-const css = themeCss(site.theme);
+const css = themeCss(site.theme) + modeCss(site.theme);
+const base = baseMode(site.theme);   // mode bawaan tema restoran; pengunjung bisa membaliknya (disimpan di perangkatnya)
 const banners = visibleBanners(site, routeKey);
 const { brand, tagline } = brandOf(site, lang);
 const title = brand + (tagline ? ' — ' + tagline : '');
 const origin = Astro.url.origin;
 ---
 <!doctype html>
-<html lang={HTML_LANG[lang] ?? lang}>
+<html lang={HTML_LANG[lang] ?? lang} data-base={base}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -28,8 +30,9 @@ const origin = Astro.url.origin;
   {site.languages.length > 1 && site.languages.map(l => <link rel="alternate" hreflang={HTML_LANG[l] ?? l} href={origin + href(site, l, slug)} />)}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;1,400&family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  {css && <style is:inline set:html={css}></style>}
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;1,400&family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@400;600&family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style is:inline set:html={css}></style>
+  <script is:inline data-astro-rerun>try{var m=localStorage.getItem('resto_mode');if(m==='light'||m==='dark')document.documentElement.dataset.mode=m;else delete document.documentElement.dataset.mode}catch(e){}</script>
   <script is:inline>document.documentElement.classList.add('js')</script>
   <ClientRouter />
 </head>

@@ -1,4 +1,4 @@
-# Kontrak API frontend ↔ backend (v1.5)
+# Kontrak API frontend ↔ backend (v1.6)
 
 > v1.1 hanya **menambah** field (tema, hero, banner, `orders_open`, `featured`) dan kode galat `E:closed`; semua field v1 tetap. Daftar perubahan: [`CHANGELOG-KONTRAK.md`](./CHANGELOG-KONTRAK.md).
 
@@ -202,3 +202,11 @@ Pelanggan memesan lewat `/pesan` tanpa QR meja. Pesanan **menunggu konfirmasi st
 - `POST /v1/orders` ke token `counter`: `name` **wajib** (`400 { "code": "E:name_required" }`), tiap pesanan = tagihan sendiri, respons memuat `"kind": "counter"`. `POST /v1/bill` (minta bill) → `E:no_bill`.
 - `site.labels`: `{ "takeaway": { "id": "Bungkus" }, "send_order": { "id": "Pesan sekarang", "en": "Send now" } }`. Kunci: `takeaway`, `online_link`, `send_order`, `i_paid`. Frontend memakai istilah bahasa halaman bila ada, selain itu teks bawaan bahasa itu.
 - Navigasi utama tidak memuat `/pesan`; `/pesan` dan `/pesanan/<token>` memakai header tanpa Beranda dan Order.
+
+
+## Bahasa (v1.6)
+
+- `site.languages`: 1–2 kode bahasa, **bahasa tampilan awal di depan**. `languages[0]` dilayani di alamat tanpa awalan; bahasa kedua di `/<kode>/…` (`/zt/menu`). Mengakses `/<languages[0]>/…` dialihkan ke alamat tanpa awalan.
+- `site.primary_lang`: bahasa **utama** (sumber isi). Dipakai sebagai fallback untuk teks yang belum diterjemahkan dan untuk nama brand utama. Bila tidak ada, frontend memakai `languages[0]`.
+- Kode yang dikenal: `id en zh zt fr es ko ja`. `zt` = Chinese Traditional (HTML `zh-Hant`). Kode lain yang cocok `^[a-z]{2}$` tetap diterima sebagai bahasa isi, tetapi teks bawaan website memakai Inggris.
+- Mode terang/gelap pengunjung sepenuhnya di sisi klien (tanpa API).

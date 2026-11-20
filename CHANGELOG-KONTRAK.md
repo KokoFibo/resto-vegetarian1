@@ -1,4 +1,12 @@
-# Perubahan kontrak API (v1 → v1.1 → v1.2 → v1.3 → v1.4 → v1.5)
+# Perubahan kontrak API (v1 → v1.1 → v1.2 → v1.3 → v1.4 → v1.5 → v1.6)
+
+## v1.6 — Bahasa tampilan awal, Chinese Traditional (zt), mode terang/gelap pengunjung (hanya tambahan)
+
+- `GET /v1/site` → field baru **`primary_lang`** (bahasa UTAMA restoran: sumber isi, fallback teks yang belum diterjemahkan). **`languages`** kini berurutan **bahasa tampilan awal dulu**: `languages[0]` = bahasa di alamat tanpa awalan (mis. "/"), `languages[1]` = bahasa kedua (`/<kode>/…`). Tanpa pengaturan khusus, `languages[0]` = `primary_lang` (sama seperti sebelumnya). Frontend lama yang memakai `languages[0]` sebagai "bahasa utama" tetap berjalan, tetapi fallback isinya sebaiknya memakai `primary_lang`.
+- Kode bahasa baru **`zt`** = 繁體中文 (Chinese Traditional). Tetap 2 huruf (`^[a-z]{2}$`) di seluruh sistem; alamat `/zt/…`; atribut HTML `lang="zh-Hant"` dan `hreflang="zh-Hant"`. Teks bawaan website mengikuti urutan: bahasa itu → (untuk zt: 简体 zh) → Inggris → Indonesia. Bahasa tanpa teks bawaan (fr, es, ko, ja) kini jatuh ke **Inggris**, bukan Indonesia.
+- Semua bahasa di tabel `languages` tersedia dipilih Owner (id, en, zh, zt, fr, es, ko, ja).
+- Frontend: tombol **mode terang/gelap** di header (pilihan pengunjung disimpan di perangkat: `localStorage["resto_mode"]`, diterapkan ke `<html data-mode>`). Tema restoran tetap mode bawaan; palet mode lawannya dihitung dari warna merek dengan jaminan kontras WCAG AA (`src/lib/mode.ts`, `npm run test:mode`).
+- Kartu menu (ponsel): ketukan di mana saja menutup deskripsi; `:hover` hanya untuk perangkat berkursor.
 
 ## v1.5 — QR Kasir (take away), istilah yang bisa diubah Owner (hanya tambahan)
 

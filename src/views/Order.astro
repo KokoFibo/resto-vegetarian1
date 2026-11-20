@@ -2,12 +2,12 @@
 import PageHead from '../components/PageHead.astro';
 import DishTags from '../components/DishTags.astro';
 import Utensils from '../components/Utensils.astro';
-import { href, loc, lbl, pick } from '../i18n';
+import { href, loc, lbl, pick, primaryOf } from '../i18n';
 import { ui } from '../i18n/ui';
 import { idr } from '../lib/format';
 import type { ViewProps } from './types';
 const { lang, site, menu, table, token } = Astro.props as ViewProps;
-const primary = site.languages[0];
+const primary = primaryOf(site);
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 const errors = Object.fromEntries(Object.entries(ui.errors).map(([code, t]) => [code, pick(t, lang)]));
 const closed = site.orders_open === false;

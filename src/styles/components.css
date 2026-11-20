@@ -35,7 +35,9 @@
 .card .detail .in { height: 100%; overflow: auto; padding: 1.1rem 1.4rem 1.25rem; display: flex; flex-direction: column; gap: .5rem; }
 .card .detail p { font-size: .9rem; line-height: 1.75; }
 .card .detail::before { content: ""; position: absolute; left: 0; right: 0; top: -13px; height: 14px; opacity: .97; background-color: var(--bg); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 14'%3E%3Cpath fill='%23000' d='M0 14V7C15 0 15 13 30 7S45 0 60 7V14Z'/%3E%3C/svg%3E") repeat-x left bottom / 60px 14px; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 14'%3E%3Cpath fill='%23000' d='M0 14V7C15 0 15 13 30 7S45 0 60 7V14Z'/%3E%3C/svg%3E") repeat-x left bottom / 60px 14px; }
-.card.hasd:hover .detail, .card.hasd:focus-visible .detail, .card.hasd.open .detail { transform: none; }
+.card.hasd.open .detail { transform: none; }
+/* hover hanya di perangkat berkursor; layar sentuh membuka/menutup lewat ketukan (tanpa hover yang menempel) */
+@media (hover: hover) and (pointer: fine) { .card.hasd:hover .detail, .card.hasd:focus-visible .detail { transform: none; } }
 
 .panel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: clamp(1.5rem, 4vw, 3rem); box-shadow: var(--shadow); }
 .scanbox { max-width: 34rem; margin: 1rem auto; text-align: center; display: grid; gap: .75rem; justify-items: center; padding: 2.5rem 1.5rem; }
@@ -57,3 +59,12 @@ input:focus { border-color: var(--jade); }
 .drow .price { white-space: nowrap; font-weight: 600; color: var(--jade); }
 .drow p { margin: 0; font-size: .92rem; }
 .drow .dd { font-size: .85rem; opacity: .85; }
+
+/* ---- saklar mode terang/gelap ---- */
+.modebtn { display: inline-flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer; }
+.modebtn:hover { border-color: var(--jade); color: var(--jade); }
+.modebtn:focus-visible { outline: 2px solid var(--vm); outline-offset: 2px; }
+.modebtn .i-sun { display: none; }
+/* efektif gelap = (pilihan pengunjung gelap) atau (belum memilih dan tema restoran gelap): tampilkan matahari (klik = terang) */
+html[data-mode="dark"] .modebtn .i-moon, html:not([data-mode])[data-base="dark"] .modebtn .i-moon { display: none; }
+html[data-mode="dark"] .modebtn .i-sun, html:not([data-mode])[data-base="dark"] .modebtn .i-sun { display: block; }

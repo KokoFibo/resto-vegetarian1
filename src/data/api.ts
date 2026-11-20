@@ -79,6 +79,7 @@ function normalizeSite(site: Site): Site {
   site.banners = normalizeBanners(site.banners);
   site.online = normalizeOnline(site.online);
   site.labels = normalizeLabels(site.labels);
+  site.primary_lang = typeof site.primary_lang === 'string' && site.languages.includes(site.primary_lang) ? site.primary_lang : site.languages[0];
   return site;
 }
 

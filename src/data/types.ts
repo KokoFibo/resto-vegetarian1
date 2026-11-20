@@ -47,6 +47,7 @@ export type Site = {
   primary_color: string | null;         // usang; abaikan
   theme: Theme | null;                  // null = tampilan bawaan
   menu_display?: 'photo' | 'text';      // pilihan Owner: 'text' = daftar teks tanpa foto (default 'photo'; backend lama boleh tanpa field ini)
+  primary_lang?: string;                // bahasa utama (isi). languages[0] = bahasa tampilan awal (alamat tanpa awalan)
   labels?: Record<string, Record<string, string>>;   // istilah yang diubah Owner: { kunci: { bahasa: teks } }; kosong = teks bawaan
   online?: SiteOnline;                  // pesanan online (takeaway); backend lama tanpa field ini = mati
   orders_open: boolean;                 // false = "Tutup sementara" / banner Libur yang menutup pemesanan

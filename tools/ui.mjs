@@ -11,8 +11,8 @@ const site = { id: 's5', slug: 'ol', status: 'active', restaurant_type: 'vegan',
   online: { enabled: true, prepay: true, qris_url: 'https://images.test/qris-1.webp', pickup_note: 'Ambil di kasir depan.' },
   labels: { takeaway: { id: 'Bungkus' }, send_order: { id: 'Pesan sekarang' }, i_paid: { id: 'Sudah transfer' } } };
 const menu = { cats: [{ slug: 'main', glyph: '', name: { id: 'Utama' } }], dishes: [
-  { id: 'd1', cat: 'main', price: 30000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi A' }, short: { id: 'x' }, detail: {}, badge: null },
-  { id: 'd2', cat: 'main', price: 20000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'x' }, detail: {}, badge: null }] };
+  { id: 'd1', cat: 'main', price: 30000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi A' }, short: { id: 'x' }, detail: { id: 'Detail A' }, badge: null },
+  { id: 'd2', cat: 'main', price: 20000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'x' }, detail: { id: 'Detail B' }, badge: null }] };
 let statusBody = {};
 const api = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x'); res.setHeader('content-type', 'application/json');
@@ -25,11 +25,11 @@ const child = spawn('node', ['.test-dist/server/entry.mjs'], { cwd: ROOT, env: {
 for (let i = 0; i < 50; i++) { try { await fetch('http://127.0.0.1:4811/', { method: 'HEAD' }); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
 const page = async path => (await fetch('http://127.0.0.1:4811' + path, { headers: { host: 'online.test' } })).text();
 const bundle = async file => (await build({ entryPoints: [file], bundle: true, write: false, format: 'iife', target: 'es2020' })).outputFiles[0].text;
-const [pesanJs, pesananJs, orderJs] = [await bundle('src/scripts/pesan.ts'), await bundle('src/scripts/pesanan.ts'), await bundle('src/scripts/order.ts')];
+const [pesanJs, pesananJs, orderJs, uiJs] = [await bundle('src/scripts/pesan.ts'), await bundle('src/scripts/pesanan.ts'), await bundle('src/scripts/order.ts'), await bundle('src/scripts/ui.ts')];
 
 async function boot(html, url, js, fetchImpl) {
   const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true });
-  const w = dom.window; w.fetch = fetchImpl; w.crypto ??= globalThis.crypto; w.scrollTo = () => {};
+  const w = dom.window; w.fetch = fetchImpl; w.crypto ??= globalThis.crypto; w.scrollTo = () => {}; w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }; w.matchMedia ??= () => ({ matches: false, addEventListener() {}, addListener() {} });
   const assigned = []; Object.defineProperty(w, '__assigned', { value: assigned });
   w.eval(js); w.document.dispatchEvent(new w.Event('astro:page-load'));
   return { w, d: w.document, assigned };
@@ -141,6 +141,39 @@ console.log('\n[U6] QR kasir (take away): nama wajib, tanpa minta bill');
   m.d.querySelector('.oi[data-id="d1"] button[data-d="+"]').dispatchEvent(new m.w.MouseEvent('click', { bubbles: true }));
   m.d.querySelector('#orderForm').dispatchEvent(new m.w.Event('submit', { bubbles: true, cancelable: true })); await tick();
   ok('meja biasa: nama tetap opsional (mengirim tanpa nama)', calls.length === 1 && calls[0].body.name === '' && !!m.d.querySelector('#billBtn'));
+}
+console.log('\n[U7] kartu menu: ketukan mana saja menutup deskripsi');
+{
+  const html = await page('/menu');
+  const { w, d } = await boot(html, 'http://online.test/menu', uiJs, async () => ({ ok: true, json: async () => ({}) }));
+  const cards = [...d.querySelectorAll('.card.hasd')];
+  const click = el => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  ok('ada kartu dengan deskripsi', cards.length === 2, String(cards.length));
+  click(cards[0]); ok('ketuk kartu → terbuka', cards[0].classList.contains('open'));
+  click(cards[0].querySelector('.detail')); ok('ketuk DI DALAM deskripsi → tertutup', !cards[0].classList.contains('open'));
+  click(cards[0]); click(d.body); ok('ketuk di LUAR (body) → tertutup', !cards[0].classList.contains('open'));
+  click(cards[0]); click(cards[0]); ok('ketuk kartu yang sama saat terbuka → tertutup', !cards[0].classList.contains('open'));
+  click(cards[0]); click(cards[1]); ok('ketuk kartu lain → yang lama tertutup, yang baru terbuka', !cards[0].classList.contains('open') && cards[1].classList.contains('open'));
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); ok('Escape menutup', !cards[1].classList.contains('open'));
+  cards[0].dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); ok('Enter pada kartu terfokus membuka (keyboard)', cards[0].classList.contains('open'));
+  cards[0].dispatchEvent(new w.KeyboardEvent('keydown', { key: ' ', bubbles: true })); ok('Spasi menutup', !cards[0].classList.contains('open'));
+  d.dispatchEvent(new w.Event('astro:page-load')); click(cards[0]); ok('pemuatan ulang halaman tidak menggandakan pendengar (tetap 1 kali buka-tutup)', cards[0].classList.contains('open'));
+  const css = (await import('node:fs')).readFileSync('src/styles/components.css', 'utf8');
+  ok('CSS: hover hanya untuk perangkat berkursor (tidak menempel di layar sentuh)', /@media \(hover: hover\) and \(pointer: fine\)\s*\{[^}]*\.card\.hasd:hover \.detail/.test(css) && !/^\.card\.hasd:hover \.detail/m.test(css));
+}
+console.log('\n[U8] saklar mode terang/gelap pengunjung');
+{
+  const html = await page('/menu');
+  const mk = async pre => { const dom = new JSDOM(html, { url: 'http://online.test/menu', runScripts: 'outside-only', pretendToBeVisual: true }); const w = dom.window; if (pre) w.localStorage.setItem('resto_mode', pre); w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }; w.scrollTo = () => {}; w.eval(uiJs); w.document.dispatchEvent(new w.Event('astro:page-load')); return w; };
+  const w = await mk(); const d = w.document, btn = d.querySelector('#modeBtn'), root = d.documentElement;
+  ok('tombol mode ada; belum memilih → tanpa data-mode (tema restoran)', !!btn && root.dataset.mode === undefined && root.dataset.base === 'light');
+  ok('label awal = tujuan klik (gelap)', btn.getAttribute('aria-label') === 'Mode gelap' && btn.getAttribute('aria-pressed') === 'false');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  ok('klik → data-mode=dark, disimpan, label & aria-pressed berubah', root.dataset.mode === 'dark' && w.localStorage.getItem('resto_mode') === 'dark' && btn.getAttribute('aria-pressed') === 'true' && btn.getAttribute('aria-label') === 'Mode terang');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); ok('klik lagi → light', root.dataset.mode === 'light' && w.localStorage.getItem('resto_mode') === 'light');
+  const w2 = await mk('dark'); ok('pilihan tersimpan diterapkan saat halaman dimuat ulang', w2.document.documentElement.dataset.mode === 'dark' && w2.document.querySelector('#modeBtn').getAttribute('aria-pressed') === 'true');
+  const w3 = await mk('sampah'); ok('nilai tersimpan tidak valid diabaikan', w3.document.documentElement.dataset.mode === undefined);
+  w2.localStorage.setItem('resto_mode', 'light'); delete w2.document.documentElement.dataset.mode; w2.document.dispatchEvent(new w2.Event('astro:after-swap')); ok('setelah pindah halaman (swap) pilihan diterapkan ulang', w2.document.documentElement.dataset.mode === 'light');
 }
 child.kill(); api.close();
 console.log(`\nHasil UI: ${pass} lulus, ${fail} gagal`); process.exit(fail ? 1 : 0);

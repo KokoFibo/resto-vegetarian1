@@ -1,6 +1,6 @@
 ---
 import type { Banner, Site } from '../data/types';
-import { loc, pick } from '../i18n';
+import { loc, pick, primaryOf } from '../i18n';
 import { ui } from '../i18n/ui';
 
 /** Banner yang boleh tampil di halaman ini (scope all = semua halaman; home/order = hanya halaman itu). */
@@ -9,7 +9,7 @@ export const visibleBanners = (site: Site, routeKey?: string): Banner[] =>
 
 interface Props { site: Site; lang: string; banners: Banner[] }
 const { site, lang, banners } = Astro.props;
-const primary = site.languages[0];
+const primary = primaryOf(site);
 ---
 {banners.length > 0 && (
   <div class="bns" data-banners>

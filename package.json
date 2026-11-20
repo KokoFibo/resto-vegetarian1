@@ -9,7 +9,8 @@
     "check": "astro check",
     "mock-api": "node tools/mock-api.mjs",
     "test:e2e": "astro build --config astro.test.config.mjs && node tools/e2e.mjs",
-    "test:ui": "astro build --config astro.test.config.mjs && node tools/ui.mjs"
+    "test:ui": "astro build --config astro.test.config.mjs && node tools/ui.mjs",
+    "test:mode": "node tools/mode.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.13",

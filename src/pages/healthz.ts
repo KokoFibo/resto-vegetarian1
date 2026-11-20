@@ -9,7 +9,7 @@ import { requestHost } from '../lib/host';
  * Tidak membuka rahasia apa pun (hanya host, domain dasar, dan alamat API yang memang publik).
  */
 /** Penanda versi kode: berubah tiap rilis fitur, supaya terlihat build mana yang melayani domain ini. */
-const BUILD = '2026-11-18 · qr-kasir+pesanan-staf+istilah';
+const BUILD = '2026-11-19 · bahasa-zt+mode-gelap+konfigurasi';
 export const prerender = false;
 export const GET: APIRoute = async ({ request, locals }) => {
   const host = requestHost(request), api = (env(locals, 'API_URL') || '').replace(/\/+$/, '');

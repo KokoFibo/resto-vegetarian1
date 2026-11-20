@@ -2,11 +2,11 @@
 import PageHead from '../components/PageHead.astro';
 import DishCard from '../components/DishCard.astro';
 import DishRow from '../components/DishRow.astro';
-import { href, loc, pick } from '../i18n';
+import { href, loc, pick, primaryOf } from '../i18n';
 import { ui } from '../i18n/ui';
 import type { ViewProps } from './types';
 const { lang, site, menu } = Astro.props as ViewProps;
-const primary = site.languages[0];
+const primary = primaryOf(site);
 const textMode = site.menu_display === 'text';
 const groups = menu.cats.map(c => ({ cat: c, dishes: menu.dishes.filter(d => d.cat === c.slug) })).filter(g => g.dishes.length);
 ---

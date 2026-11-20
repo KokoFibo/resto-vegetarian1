@@ -46,10 +46,17 @@ SITES['online.test'] = { ...SITES['good.test'], id: 's5', slug: 'ol', languages:
 SITES['onlinenoqr.test'] = { ...SITES['good.test'], id: 's6', slug: 'olnq', online: { enabled: true, prepay: true, qris_url: null, pickup_note: null } };   // prepay tanpa gambar QRIS harus dianggap mati
 SITES['onlineclosed.test'] = { ...SITES['good.test'], id: 's7', slug: 'olc', orders_open: false, online: ONLINE };
 SITES['onlinejunk.test'] = { ...SITES['good.test'], id: 's8', slug: 'olj', online: { enabled: 'yes', prepay: 1, qris_url: 'javascript:alert(1)', pickup_note: 5 } };
+const TR = { id: { brand_name: 'Warung ID', tagline: null }, zt: { brand_name: '小館', tagline: null }, fr: { brand_name: 'Chez ID', tagline: null } };
+SITES['ztdef.test'] = { ...SITES['good.test'], id: 's9', slug: 'ztdef', languages: ['zt', 'id'], primary_lang: 'id', translations: TR };   // tampilan awal = 繁體, bahasa utama = Indonesia
+SITES['ztsec.test'] = { ...SITES['good.test'], id: 's10', slug: 'ztsec', languages: ['id', 'zt'], primary_lang: 'id', translations: TR };
+SITES['fr.test'] = { ...SITES['good.test'], id: 's12', slug: 'fr', languages: ['id', 'fr'], primary_lang: 'id', translations: TR };
+SITES['dark.test'] = { ...SITES['good.test'], id: 's11', slug: 'dark', theme: { id: 'dark', dark: true, colors: { primary: '#E8D9A8', secondary: '#EEE2BC', accent: '#B45F14', bg: '#14201A', bg2: '#1C2C24', ink: '#F2EFE9', ink2: '#C9C5BC', line: 'rgba(232,217,168,.14)' } } };
 SITES['text.test'] = { ...SITES['good.test'], id: 's4', slug: 'text', menu_display: 'text' };   // backend sungguhan mengirim menu_display
 const MENU = { cats: [{ slug: 'main', glyph: '', name: { id: 'Utama' } }], dishes: [
   { id: 'd1', cat: 'main', price: 30000, img: 'https://images.test/restaurant/tenants/x/menu/a.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, featured: true, name: { id: 'Nasi A' }, short: { id: 'enak' }, detail: null, badge: null },
   { id: 'd2', cat: 'main', price: 20000, img: 'https://images.test/restaurant/tenants/x/menu/b.webp', egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { id: 'Nasi B' }, short: { id: 'enak' }, detail: null, badge: null }] };
+const MENU_ML = { cats: [{ slug: 'main', glyph: '', name: { en: 'Mains', id: 'Utama' } }], dishes: [
+  { id: 'd1', cat: 'main', price: 30000, img: null, egg: false, onion: false, nonHalal: false, spicy: 0, soldOut: false, name: { en: 'Dish EN', id: 'Nasi ID' }, short: { en: 'tasty', id: 'enak' }, detail: null, badge: null }] };   // en lebih dulu: fallback harus memilih bahasa UTAMA (id), bukan nilai pertama
 let lastOnline = null, onlineCalls = 0;
 const api = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x'); res.setHeader('content-type', 'application/json');
@@ -57,14 +64,15 @@ const api = http.createServer((req, res) => {
   if (u.pathname === '/v1/online-orders') { const t = u.searchParams.get('token'); if (t !== 'c'.repeat(32)) { res.statusCode = 404; return res.end(JSON.stringify({ code: 'E:invalid_order' })); } return res.end(JSON.stringify({ order_no: '0007', status: 'ready', name: 'Budi', pickup_by: 'courier', pay_plan: 'at_pickup', pay_claimed: false, paid: false, reject_reason: null, created_at: '2026-11-17T10:00:00Z', note: null, figures: { subtotal: 60000, service: 3000, tax: 6300, total: 69300 }, items: [{ name: 'Nasi A', qty: 2, line_total: 60000 }] })); }
   if (u.pathname === '/v1/online-claim' && req.method === 'POST') return res.end(JSON.stringify({ ok: true }));
   if (u.pathname === '/v1/site') { const s = SITES[u.searchParams.get('host')]; res.statusCode = s ? 200 : 404; return res.end(JSON.stringify(s || { error: 'nf' })); }
-  if (u.pathname === '/v1/menu') return res.end(JSON.stringify(MENU));
+  if (u.pathname === '/v1/menu') return res.end(JSON.stringify(u.searchParams.get('site') === 's9' ? MENU_ML : MENU));
   if (u.pathname === '/v1/table') return res.end(JSON.stringify((u.searchParams.get('token') || '').startsWith('e') ? { label: 'Take away', kind: 'counter' } : { label: 'Meja 1' }));
   if (u.pathname === '/v1/orders') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:closed' })); }
   if (u.pathname === '/v1/bill-request') { res.statusCode = 409; return res.end(JSON.stringify({ code: 'E:no_bill' })); }
   res.statusCode = 404; res.end('{}');
 }).listen(4600);
 
-const has = (t, s) => t.includes(s), count = (t, s) => t.split(s).length - 1;
+// ':root{--jade' = blok TEMA DASAR restoran (di awal <style>); blok mode pengunjung (html[data-mode=…]:root{…}) tidak dihitung sebagai tema dasar.
+const has = (t, s) => (s === ':root{--jade' ? /<style[^>]*>html:root\{--jade/.test(t) : t.includes(s)), count = (t, s) => t.split(s).length - 1;
 
 console.log('\n[1] Mode contoh bawaan (tanpa skenario, MEDIA_URL kosong)');
 await withServer({}, async get => {
@@ -127,12 +135,13 @@ await withServer({}, async get => {
 });
 
 console.log('\n[4] tema');
-for (const [sc, expect, not] of [['theme-samudra', ['--jade:#1F4E6B', '--vm:#B45F14', '--on-accent:#FFFFFF', '--bg-a90:rgba(246,249,251,0.9)'], ['color-scheme']],
+for (const [sc, expect, not] of [['theme-samudra', ['--jade:#1F4E6B', '--vm:#B45F14', '--on-accent:#FFFFFF', '--bg-a90:rgba(246,249,251,0.9)'], []],
   ['theme-giok', [], [':root{--jade']], ['theme-custom', ['--jade:#6B2D5C'], []], ['theme-dark', ['color-scheme:dark', '--bg:#14201A', '--gold-ink:#E6C65A'], []], ['theme-arang', ['--jade:#2E3A3F'], []]])
   await withServer({ DEMO_SCENARIO: sc }, async get => {
     const h = (await get('/')).text;
     ok(sc + ': variabel yang diharapkan', expect.every(x => has(h, x)), expect.filter(x => !has(h, x)).join('|'));
     ok(sc + ': tidak ada yang tidak diharapkan', not.every(x => !has(h, x)));
+    if (sc === 'theme-samudra') { const base = (h.match(/<style[^>]*>(html:root\{[^}]*\})/) || [])[1] || ''; ok('tema terang: blok tema dasar tanpa color-scheme (blok mode pengunjung terpisah)', base.includes('--jade:#1F4E6B') && !base.includes('color-scheme'), base.slice(0, 80)); }
   });
 
 console.log('\n[5] hero kustom (id & zh) + unggulan');
@@ -265,6 +274,34 @@ await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '', TURNSTILE_SE
   ok('tanpa token captcha → 403 E:captcha, backend tidak dipanggil', r.status === 403 && JSON.parse(r.text).code === 'E:captcha' && onlineCalls === before, r.text);
   const r2 = await post(get, 'online.test', '/api/pesan', { lang: 'id', items: [{ id: 'd1', qty: 1 }], name: 'B', phone: '0812345678', captcha: 'salah' });
   ok('token captcha salah (siteverify tidak terjangkau/ditolak) → 403', r2.status === 403 && onlineCalls === before, r2.text);
+});
+console.log('\n[8] bahasa tampilan awal, Chinese Traditional (zt), mode terang/gelap');
+await withServer({ API_URL: 'http://127.0.0.1:4600', MEDIA_URL: '' }, async get => {
+  const h = host => ({ headers: { host } });
+  const navOf = html => (html.match(/<nav id="nav"[^>]*>([\s\S]*?)<\/nav>/) || [])[1] || '';
+  const r1 = await get('/', h('ztdef.test'));
+  ok('tampilan awal = zt: "/" berbahasa zh-Hant, bukan bahasa utama', r1.status === 200 && has(r1.text, '<html lang="zh-Hant"'), r1.text.slice(0, 120));
+  ok('teks bawaan website dalam 繁體 (點餐, bukan 点餐)', has(navOf(r1.text), '點餐') && !has(navOf(r1.text), '点餐'));
+  ok('pengalih bahasa menampilkan 繁 dan ID', has(r1.text, '>繁<') && has(r1.text, '>ID<'));
+  ok('hreflang: zh-Hant dan id', has(r1.text, 'hreflang="zh-Hant"') && has(r1.text, 'hreflang="id"'));
+  const r2 = await get('/id/', h('ztdef.test')); ok('bahasa utama (id) kini berawalan /id/ dan berbahasa Indonesia', r2.status === 200 && has(r2.text, '<html lang="id"') && has(navOf(r2.text), 'Beranda'));
+  const r3 = await get('/zt/menu', { ...h('ztdef.test'), redirect: 'manual' }); ok('/zt/menu (tampilan awal) dialihkan ke /menu', r3.status >= 300 && r3.status < 400 && (r3.headers.get('location') || '').endsWith('/menu'), String(r3.status) + ' ' + r3.headers.get('location'));
+  const m1 = (await get('/menu', h('ztdef.test'))).text;
+  ok('fallback isi memakai bahasa UTAMA (Nasi ID), bukan nilai pertama (Dish EN)', has(m1, 'Nasi ID') && !has(m1, 'Dish EN'));
+  ok('nama restoran zt dipakai di judul', has(r1.text, '<title>小館'));
+  const s1 = await get('/zt/', h('ztsec.test')); ok('zt sebagai bahasa kedua: /zt/ zh-Hant + 點餐', s1.status === 200 && has(s1.text, '<html lang="zh-Hant"') && has(navOf(s1.text), '點餐'));
+  ok('font Noto Serif/Sans TC dimuat untuk zh-Hant', has(s1.text, 'Noto+Sans+TC') && has(s1.text, 'Noto+Serif+TC'));
+  const f1 = (await get('/fr/', h('fr.test'))).text; ok('bahasa tanpa teks bawaan (fr): Inggris, bukan Indonesia', has(navOf(f1), 'Home') && !has(navOf(f1), 'Beranda'), navOf(f1).slice(0, 200));
+
+  // mode terang/gelap pengunjung
+  const g = (await get('/', h('good.test'))).text;
+  ok('tema terang: data-base="light", tombol mode ada di header', has(g, 'data-base="light"') && has(g, 'id="modeBtn"'));
+  ok('CSS memuat blok mode terang & gelap', has(g, 'html[data-mode="dark"]:root{') && has(g, 'html[data-mode="light"]:root{'));
+  ok('skrip awal membaca pilihan pengunjung sebelum render (tanpa kedipan)', has(g, "localStorage.getItem('resto_mode')") && has(g, 'data-astro-rerun'));
+  const d = (await get('/', h('dark.test'))).text; ok('tema gelap restoran: data-base="dark"', has(d, 'data-base="dark"') && has(d, 'html[data-mode="light"]:root{'));
+  const pz = (await get('/pesan', h('online.test'))).text; ok('/pesan juga memuat tombol mode', has(pz, 'id="modeBtn"'));
+  ok('label tombol mode (aksesibilitas) tersedia ID', has(g, 'data-l-dark="Mode gelap"') && has(g, 'data-l-light="Mode terang"'));
+  const gz = (await get('/', h('ztdef.test'))).text; ok('label tombol mode dalam 繁體', has(gz, 'data-l-dark="深色模式"') && has(gz, 'data-l-light="淺色模式"'));
 });
 api.close();
 console.log(`\nHasil: ${pass} lulus, ${fail} gagal`); process.exit(fail ? 1 : 0);

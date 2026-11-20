@@ -36,7 +36,9 @@ Variabel opsional untuk **Cloudflare Turnstile** (anti-bot di formulir): `TURNST
 
 QR **Kasir** (take away) memakai halaman Order yang sama (`/order?meja=<token>`): nama wajib, tanpa tombol minta bill. Istilah yang diubah Owner datang lewat `site.labels` (lihat `API-CONTRACT.md` v1.5).
 
-Tes: `npm run test:e2e` (SSR + API tiruan) dan `npm run test:ui` (DOM skrip klien di jsdom).
+Bahasa: `site.languages[0]` = bahasa tampilan awal (alamat tanpa awalan), `site.primary_lang` = bahasa utama (isi). Mendukung `id en zh zt fr es ko ja`; `zt` = 繁體中文 (`lang="zh-Hant"`, font Noto TC). **Mode terang/gelap**: tombol di header; tema restoran tetap bawaan, palet lawannya dihitung otomatis dari warna merek dengan kontras AA (`src/lib/mode.ts`).
+
+Tes: `npm run test:e2e` (SSR + API tiruan) dan `npm run test:ui` (DOM skrip klien di jsdom) dan `npm run test:mode` (kontras palet mode terang/gelap: preset, tema gelap, 600 warna acak).
 
 ## Struktur
 

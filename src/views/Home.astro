@@ -2,7 +2,7 @@
 import Utensils from '../components/Utensils.astro';
 import { contentFor } from '../content';
 import type { HeroKey } from '../data/types';
-import { href, loc, pick } from '../i18n';
+import { href, loc, pick, primaryOf } from '../i18n';
 import { ui } from '../i18n/ui';
 import { brandOf } from '../lib/brand';
 import { idr } from '../lib/format';
@@ -10,7 +10,7 @@ import { mediaUrl } from '../lib/media';
 import type { ViewProps } from './types';
 const { lang, site, menu } = Astro.props as ViewProps;
 const { home: c } = contentFor(site);
-const primary = site.languages[0];
+const primary = primaryOf(site);
 const L = (t: Parameters<typeof pick>[0]) => pick(t, lang);
 
 // Teks hero dari admin: kustom[bahasa] → kustom[bahasa utama] → teks bawaan template (kolom kosong = bawaan).
